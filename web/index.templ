@@ -1,0 +1,26 @@
+package web
+
+import (
+	"strconv"
+)
+
+templ Index(pageViews int) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head></head>
+	<body>
+		{ str(pageViews) } page view{ pluralise(pageViews) }!
+	</body>
+	</html>
+}
+
+func str(n int) string {
+	return strconv.Itoa(n)
+}
+
+func pluralise(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}

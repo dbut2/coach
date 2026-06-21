@@ -1,0 +1,45 @@
+name: myapp-dev
+
+services:
+  myapp:
+    build: .
+    environment:
+      DATABASE_DSN: postgres://postgres:postgres@pg:5432/postgres?sslmode=disable
+    depends_on:
+      pg:
+        condition: service_healthy
+    networks:
+      default:
+      web:
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.myapp-dev.rule: Host(`myapp-dev.dbut.dev`)
+      traefik.http.services.myapp-dev.loadbalancer.server.port: "8080"
+
+  pg:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-seed:
+    image: postgres:18
+    environment:
+      DATABASE_DSN: ${DATABASE_DSN}
+    entrypoint: >
+      sh -c "pg_dump $${DATABASE_DSN} | psql postgres://postgres:postgres@pg:5432/postgres"
+    depends_on:
+      pg:
+        condition: service_healthy
+    profiles:
+      - seed
+
+networks:
+  web:
+    external: true
