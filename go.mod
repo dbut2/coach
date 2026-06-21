@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/a-h/templ v0.3.1001
 	github.com/gin-gonic/gin v1.12.0
-	github.com/lib/pq v1.12.0
+	github.com/lib/pq v1.12.3
 	github.com/pressly/goose/v3 v3.27.1
 )
 
