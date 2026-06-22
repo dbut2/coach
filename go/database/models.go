@@ -3,3 +3,124 @@
 //   sqlc v1.30.0
 
 package database
+
+import (
+	"database/sql"
+	"encoding/json"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
+)
+
+type Activity struct {
+	ID         uuid.UUID       `json:"id"`
+	UserID     uuid.UUID       `json:"user_id"`
+	Source     string          `json:"source"`
+	SourceID   string          `json:"source_id"`
+	StartTime  time.Time       `json:"start_time"`
+	SportType  string          `json:"sport_type"`
+	RawSummary json.RawMessage `json:"raw_summary"`
+	IngestedAt time.Time       `json:"ingested_at"`
+}
+
+type ActivityStream struct {
+	ActivityID  uuid.UUID             `json:"activity_id"`
+	TimeOffsetS []int32               `json:"time_offset_s"`
+	Hr          []int32               `json:"hr"`
+	PaceSPerKm  []string              `json:"pace_s_per_km"`
+	Cadence     []string              `json:"cadence"`
+	PowerW      []string              `json:"power_w"`
+	AltitudeM   []string              `json:"altitude_m"`
+	Lat         []string              `json:"lat"`
+	Lng         []string              `json:"lng"`
+	Extra       pqtype.NullRawMessage `json:"extra"`
+}
+
+type ConversationSummary struct {
+	UserID                     uuid.UUID     `json:"user_id"`
+	Summary                    string        `json:"summary"`
+	SummarizedThroughMessageID uuid.NullUUID `json:"summarized_through_message_id"`
+	UpdatedAt                  time.Time     `json:"updated_at"`
+}
+
+type Message struct {
+	ID          uuid.UUID             `json:"id"`
+	UserID      uuid.UUID             `json:"user_id"`
+	Role        string                `json:"role"`
+	Content     string                `json:"content"`
+	ToolName    sql.NullString        `json:"tool_name"`
+	ToolPayload pqtype.NullRawMessage `json:"tool_payload"`
+	CreatedAt   time.Time             `json:"created_at"`
+}
+
+type Plan struct {
+	ID         uuid.UUID             `json:"id"`
+	UserID     uuid.UUID             `json:"user_id"`
+	Status     string                `json:"status"`
+	Name       sql.NullString        `json:"name"`
+	GoalFactID uuid.NullUUID         `json:"goal_fact_id"`
+	StartDate  sql.NullTime          `json:"start_date"`
+	EndDate    sql.NullTime          `json:"end_date"`
+	Meta       pqtype.NullRawMessage `json:"meta"`
+	CreatedAt  time.Time             `json:"created_at"`
+	UpdatedAt  time.Time             `json:"updated_at"`
+}
+
+type PlanChangeProposal struct {
+	ID                  uuid.UUID             `json:"id"`
+	PlanID              uuid.UUID             `json:"plan_id"`
+	UserID              uuid.UUID             `json:"user_id"`
+	Status              string                `json:"status"`
+	Rationale           sql.NullString        `json:"rationale"`
+	ProposedDiff        json.RawMessage       `json:"proposed_diff"`
+	AppliedDiff         pqtype.NullRawMessage `json:"applied_diff"`
+	DecidedBy           sql.NullString        `json:"decided_by"`
+	DecidedAt           sql.NullTime          `json:"decided_at"`
+	TriggeringMessageID uuid.NullUUID         `json:"triggering_message_id"`
+	CreatedAt           time.Time             `json:"created_at"`
+}
+
+type PlannedWorkout struct {
+	ID                  uuid.UUID             `json:"id"`
+	PlanID              uuid.UUID             `json:"plan_id"`
+	UserID              uuid.UUID             `json:"user_id"`
+	ScheduledDate       time.Time             `json:"scheduled_date"`
+	WorkoutType         sql.NullString        `json:"workout_type"`
+	Description         sql.NullString        `json:"description"`
+	TargetDistanceM     sql.NullString        `json:"target_distance_m"`
+	TargetDurationS     sql.NullInt32         `json:"target_duration_s"`
+	Structure           pqtype.NullRawMessage `json:"structure"`
+	CompletedActivityID uuid.NullUUID         `json:"completed_activity_id"`
+	CreatedAt           time.Time             `json:"created_at"`
+}
+
+type RunnerFact struct {
+	ID              uuid.UUID       `json:"id"`
+	UserID          uuid.UUID       `json:"user_id"`
+	Type            string          `json:"type"`
+	Status          string          `json:"status"`
+	Value           json.RawMessage `json:"value"`
+	SourceMessageID uuid.UUID       `json:"source_message_id"`
+	Salience        sql.NullInt16   `json:"salience"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
+}
+
+type User struct {
+	ID          uuid.UUID      `json:"id"`
+	DisplayName sql.NullString `json:"display_name"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+type WellnessMetric struct {
+	ID         uuid.UUID             `json:"id"`
+	UserID     uuid.UUID             `json:"user_id"`
+	Date       time.Time             `json:"date"`
+	MetricKey  string                `json:"metric_key"`
+	ValueNum   sql.NullString        `json:"value_num"`
+	ValueJson  pqtype.NullRawMessage `json:"value_json"`
+	Source     string                `json:"source"`
+	IngestedAt time.Time             `json:"ingested_at"`
+}

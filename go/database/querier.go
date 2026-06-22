@@ -9,7 +9,7 @@ import (
 )
 
 type Querier interface {
-	Null(ctx context.Context) (int, error)
+	Null(ctx context.Context) (int32, error)
 }
 
 var _ Querier = (*Queries)(nil)

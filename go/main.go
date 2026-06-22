@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
@@ -28,38 +27,32 @@ func run() error {
 		return errors.New("DATABASE_DSN is required")
 	}
 
-	if err := migrate(dsn); err != nil {
-		return fmt.Errorf("migrate: %w", err)
-	}
-
 	ctx := context.Background()
 
-	pool, err := pgxpool.New(ctx, dsn)
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
-	defer pool.Close()
+	defer func() { _ = db.Close() }()
+
+	if err := migrate(db); err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
 
 	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if err := pool.Ping(pingCtx); err != nil {
+	if err := db.PingContext(pingCtx); err != nil {
 		return fmt.Errorf("ping: %w", err)
 	}
 
-	return service.New(pool).Run(ctx)
+	return service.New(db).Run(ctx)
 }
 
-func migrate(dsn string) error {
+func migrate(db *sql.DB) error {
 	dir := os.Getenv("MIGRATIONS_DIR")
 	if dir == "" {
 		dir = "/migrations"
 	}
-
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = db.Close() }()
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err

@@ -13,9 +13,9 @@ const null = `-- name: Null :one
 SELECT 1
 `
 
-func (q *Queries) Null(ctx context.Context) (int, error) {
-	row := q.db.QueryRow(ctx, null)
-	var column_1 int
+func (q *Queries) Null(ctx context.Context) (int32, error) {
+	row := q.db.QueryRowContext(ctx, null)
+	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
 }

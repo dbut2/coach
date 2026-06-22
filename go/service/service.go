@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"os"
@@ -11,20 +12,19 @@ import (
 
 	"dbut.dev/x/vanity"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Service struct {
-	pool *pgxpool.Pool
-	e    *gin.Engine
+	db *sql.DB
+	e  *gin.Engine
 }
 
-func New(pool *pgxpool.Pool) *Service {
+func New(db *sql.DB) *Service {
 	//gin.SetMode(gin.ReleaseMode) //todo
 
 	s := &Service{
-		pool: pool,
-		e:    gin.New(),
+		db: db,
+		e:  gin.New(),
 	}
 	s.e.Use(gin.Recovery())
 	s.e.Use(vanity.Middleware("github.com/dbut2/coach/go"))
@@ -42,7 +42,7 @@ func (s *Service) health(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
 
-	if err := s.pool.Ping(ctx); err != nil {
+	if err := s.db.PingContext(ctx); err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unavailable"})
 		return
 	}
