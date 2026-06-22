@@ -5,6 +5,10 @@ sql:
     queries: "./queries"
     gen:
       go:
-        sql_driver: "github.com/lib/pq"
+        sql_package: "pgx/v5"
         out: "../go/database"
         emit_interface: true
+        emit_json_tags: true
+        overrides:
+          - db_type: int
+            go_type: int

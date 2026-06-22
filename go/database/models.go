@@ -3,7 +3,3 @@
 //   sqlc v1.30.0
 
 package database
-
-type MyappStat struct {
-	PageViews int32
-}

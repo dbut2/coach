@@ -1,15 +1,15 @@
 services:
-  web:
+  service:
     build: .
     ports:
       - "8080:8080"
     environment:
-      DATABASE_DSN: postgres://postgres:postgres@pg:5432/postgres?sslmode=disable
+      DATABASE_DSN: postgres://postgres:postgres@db:5432/postgres?sslmode=disable
     depends_on:
-      pg:
+      db:
         condition: service_healthy
 
-  pg:
+  db:
     image: postgres:18
     ports:
       - "5432:5432"

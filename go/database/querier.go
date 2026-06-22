@@ -9,8 +9,7 @@ import (
 )
 
 type Querier interface {
-	GetPageViews(ctx context.Context) (int32, error)
-	IncrementPageViews(ctx context.Context) error
+	Null(ctx context.Context) (int, error)
 }
 
 var _ Querier = (*Queries)(nil)

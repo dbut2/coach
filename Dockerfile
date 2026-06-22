@@ -1,23 +1,20 @@
-FROM golang:alpine AS builder
+FROM golang:1.26-alpine AS builder
 
-WORKDIR /app
+WORKDIR /app/go
 
-COPY go.mod go.sum ./
+COPY go/go.mod go/go.sum ./
 RUN go mod download
 
-COPY ./db ./db
-COPY ./web ./web
-COPY ./go ./go
+COPY go/ ./
+RUN go build -o /bin/server .
 
-RUN go build -o /bin/server ./go
-
-FROM alpine
+FROM alpine AS latest
 
 WORKDIR /app
 
 COPY --from=builder /bin/server /bin/server
+COPY db/migrations /migrations
 
-ARG PORT=8080
-EXPOSE ${PORT}
+EXPOSE 8080
 
 CMD ["/bin/server"]

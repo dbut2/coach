@@ -9,23 +9,25 @@ import (
 	"syscall"
 	"time"
 
+	"dbut.dev/x/vanity"
 	"github.com/gin-gonic/gin"
-
-	"dbut.dev/web-template/go/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Service struct {
-	db database.Querier
-	e  *gin.Engine
+	pool *pgxpool.Pool
+	e    *gin.Engine
 }
 
-func New(db database.Querier) *Service {
-	gin.SetMode(gin.ReleaseMode)
+func New(pool *pgxpool.Pool) *Service {
+	//gin.SetMode(gin.ReleaseMode) //todo
 
 	s := &Service{
-		db: db,
-		e:  gin.New(),
+		pool: pool,
+		e:    gin.New(),
 	}
+	s.e.Use(gin.Recovery())
+	s.e.Use(vanity.Middleware("github.com/dbut2/coach/go"))
 
 	s.addRoutes()
 
@@ -33,37 +35,46 @@ func New(db database.Querier) *Service {
 }
 
 func (s *Service) addRoutes() {
-	s.e.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	s.e.GET("/health", s.health)
+}
 
-	s.e.GET("/", s.rootHandler)
+func (s *Service) health(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	defer cancel()
 
-	v1 := s.e.Group("/api/v1")
-	v1api := v1API{s: s}
-	{
-		v1.GET("/pageviews", v1api.getPageViews)
+	if err := s.pool.Ping(ctx); err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unavailable"})
+		return
 	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func (s *Service) Run(ctx context.Context) error {
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: s.e,
+		Addr:              ":" + port(),
+		Handler:           s.e,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-quit
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
-		_ = server.Shutdown(ctx)
+		_ = server.Shutdown(shutdownCtx)
 	}()
 
 	err := server.ListenAndServe()
 	if errors.Is(err, http.ErrServerClosed) {
-		err = nil
+		return nil
 	}
 	return err
+}
+
+func port() string {
+	if p := os.Getenv("PORT"); p != "" {
+		return p
+	}
+	return "8080"
 }
