@@ -39,7 +39,7 @@ func run() error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if err := db.PingContext(pingCtx); err != nil {
 		return fmt.Errorf("ping: %w", err)
