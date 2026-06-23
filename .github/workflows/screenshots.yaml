@@ -24,7 +24,7 @@ jobs:
         with:
           go-version-file: go/go.mod
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: .cache/rod
           key: rod-${{ runner.os }}-${{ hashFiles('tools/go.sum') }}
