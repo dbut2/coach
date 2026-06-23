@@ -14,17 +14,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Service struct {
-	db *sql.DB
-	e  *gin.Engine
+type Config struct {
+	Port string `env:"PORT" envDefault:"8080"`
 }
 
-func New(db *sql.DB) *Service {
+type Service struct {
+	db   *sql.DB
+	e    *gin.Engine
+	port string
+}
+
+func New(db *sql.DB, cfg Config) *Service {
 	//gin.SetMode(gin.ReleaseMode) //todo
 
 	s := &Service{
-		db: db,
-		e:  gin.New(),
+		db:   db,
+		e:    gin.New(),
+		port: cfg.Port,
 	}
 	s.e.Use(gin.Recovery())
 	s.e.Use(vanity.Middleware("github.com/dbut2/coach/go"))
@@ -51,7 +57,7 @@ func (s *Service) health(c *gin.Context) {
 
 func (s *Service) Run(ctx context.Context) error {
 	server := &http.Server{
-		Addr:              ":" + port(),
+		Addr:              ":" + s.port,
 		Handler:           s.e,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -70,11 +76,4 @@ func (s *Service) Run(ctx context.Context) error {
 		return nil
 	}
 	return err
-}
-
-func port() string {
-	if p := os.Getenv("PORT"); p != "" {
-		return p
-	}
-	return "8080"
 }

@@ -3,15 +3,14 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
+	"naomi.run/config"
 	"naomi.run/service"
 )
 
@@ -22,20 +21,20 @@ func main() {
 }
 
 func run() error {
-	dsn := os.Getenv("DATABASE_DSN")
-	if dsn == "" {
-		return errors.New("DATABASE_DSN is required")
+	cfg, err := config.Load()
+	if err != nil {
+		return err
 	}
 
 	ctx := context.Background()
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := sql.Open("pgx", cfg.DatabaseDSN)
 	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}
 	defer func() { _ = db.Close() }()
 
-	if err := migrate(db); err != nil {
+	if err := migrate(db, cfg.MigrationsDir); err != nil {
 		return fmt.Errorf("migrate: %w", err)
 	}
 
@@ -45,15 +44,10 @@ func run() error {
 		return fmt.Errorf("ping: %w", err)
 	}
 
-	return service.New(db).Run(ctx)
+	return service.New(db, cfg.Service).Run(ctx)
 }
 
-func migrate(db *sql.DB) error {
-	dir := os.Getenv("MIGRATIONS_DIR")
-	if dir == "" {
-		dir = "/migrations"
-	}
-
+func migrate(db *sql.DB, dir string) error {
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err
 	}
