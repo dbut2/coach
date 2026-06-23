@@ -18,8 +18,8 @@ screenshots: gen-templ
 
 .PHONY: gen-strava
 gen-strava:
-	rm -rf ./go/client/strava && mkdir -p ./go/client/strava
-	$(GO) -C tools tool swagger generate client -c strava -m strava/models -e -f https://developers.strava.com/swagger/swagger.json -t ../go/client --skip-validation
+	rm -rf ./go/clients/strava && mkdir -p ./go/clients/strava
+	$(GO) -C tools tool swagger generate client -c strava -m strava/models -e -f https://developers.strava.com/swagger/swagger.json -t ../go/clients --skip-validation
 	$(GO) -C go mod tidy
 
 .PHONY: tooling
