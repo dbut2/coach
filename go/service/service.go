@@ -11,28 +11,49 @@ import (
 	"time"
 
 	"dbut.dev/x/vanity"
+	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
+
+	"naomi.run/database"
+	"naomi.run/strava"
 )
 
 type Config struct {
-	Port string `env:"PORT" envDefault:"8080"`
+	Port               string  `env:"PORT" envDefault:"8080"`
+	BaseURL            string  `env:"BASE_URL,required"`
+	StravaClientID     string  `env:"STRAVA_CLIENT_ID,required"`
+	StravaClientSecret string  `env:"STRAVA_CLIENT_SECRET,required"`
+	WebhookVerifyToken string  `env:"STRAVA_VERIFY_TOKEN"`
+	CoachName          string  `env:"COACH_NAME" envDefault:"Naomi"`
+	AllowedAthletes    []int64 `env:"STRAVA_ALLOWED_ATHLETES"`
+}
+
+func (c Config) athleteAllowed(id int64) bool {
+	for _, a := range c.AllowedAthletes {
+		if a == id {
+			return true
+		}
+	}
+	return false
 }
 
 type Service struct {
-	db   *sql.DB
-	e    *gin.Engine
-	port string
+	cfg   Config
+	db    *sql.DB
+	q     *database.Queries
+	oauth *oauth2.Config
+	e     *gin.Engine
 }
 
 func New(db *sql.DB, cfg Config) *Service {
-	//gin.SetMode(gin.ReleaseMode) //todo
-
 	s := &Service{
-		db:   db,
-		e:    gin.New(),
-		port: cfg.Port,
+		cfg:   cfg,
+		db:    db,
+		q:     database.New(db),
+		oauth: strava.Config(cfg.StravaClientID, cfg.StravaClientSecret, "https://strava.dbut.dev/naomi"), // todo: configure redirect
+		e:     gin.Default(),
 	}
-	s.e.Use(gin.Recovery())
 	s.e.Use(vanity.Middleware("github.com/dbut2/coach/go"))
 
 	s.addRoutes()
@@ -42,6 +63,18 @@ func New(db *sql.DB, cfg Config) *Service {
 
 func (s *Service) addRoutes() {
 	s.e.GET("/health", s.health)
+
+	s.e.GET("/", s.index)
+	s.e.GET("/auth/strava", s.connectStrava)
+	s.e.GET("/auth/strava/callback", s.stravaCallback)
+	s.e.POST("/logout", s.logout)
+
+	s.e.GET("/webhook/strava", s.webhookVerify)
+	s.e.POST("/webhook/strava", s.webhookEvent)
+
+	authed := s.e.Group("/", s.requireAuth)
+	authed.GET("/conversation", s.conversation)
+	authed.GET("/settings", s.settings)
 }
 
 func (s *Service) health(c *gin.Context) {
@@ -55,9 +88,15 @@ func (s *Service) health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+func render(c *gin.Context, status int, comp templ.Component) {
+	c.Status(status)
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	_ = comp.Render(c.Request.Context(), c.Writer)
+}
+
 func (s *Service) Run(ctx context.Context) error {
 	server := &http.Server{
-		Addr:              ":" + s.port,
+		Addr:              ":" + s.cfg.Port,
 		Handler:           s.e,
 		ReadHeaderTimeout: 5 * time.Second,
 	}

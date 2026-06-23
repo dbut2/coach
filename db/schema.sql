@@ -14,8 +14,8 @@ CREATE TABLE activity_streams (
     time_offset_s integer[],
     hr integer[],
     pace_s_per_km numeric[],
-    cadence numeric[],
-    power_w numeric[],
+    cadence integer[],
+    power_w integer[],
     altitude_m numeric[],
     lat numeric[],
     lng numeric[],
@@ -88,6 +88,24 @@ CREATE TABLE runner_facts (
     value jsonb NOT NULL,
     source_message_id uuid NOT NULL,
     salience smallint DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE sessions (
+    id text NOT NULL,
+    user_id uuid NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE strava_connections (
+    user_id uuid NOT NULL,
+    athlete_id bigint NOT NULL,
+    access_token text NOT NULL,
+    refresh_token text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    scope text DEFAULT ''::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );

@@ -6,10 +6,23 @@ package database
 
 import (
 	"context"
+	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateStravaConnection(ctx context.Context, arg CreateStravaConnectionParams) (StravaConnection, error)
+	CreateUser(ctx context.Context, displayName sql.NullString) (User, error)
+	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
+	DeleteSession(ctx context.Context, id string) error
+	GetSessionUser(ctx context.Context, id string) (GetSessionUserRow, error)
+	GetStravaConnectionByAthleteID(ctx context.Context, athleteID int64) (StravaConnection, error)
 	Null(ctx context.Context) (int32, error)
+	UpdateStravaTokens(ctx context.Context, arg UpdateStravaTokensParams) error
+	UpsertActivity(ctx context.Context, arg UpsertActivityParams) (uuid.UUID, error)
+	UpsertActivityStream(ctx context.Context, arg UpsertActivityStreamParams) error
 }
 
 var _ Querier = (*Queries)(nil)

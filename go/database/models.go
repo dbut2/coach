@@ -29,8 +29,8 @@ type ActivityStream struct {
 	TimeOffsetS []int32               `json:"time_offset_s"`
 	Hr          []int32               `json:"hr"`
 	PaceSPerKm  []string              `json:"pace_s_per_km"`
-	Cadence     []string              `json:"cadence"`
-	PowerW      []string              `json:"power_w"`
+	Cadence     []int32               `json:"cadence"`
+	PowerW      []int32               `json:"power_w"`
 	AltitudeM   []string              `json:"altitude_m"`
 	Lat         []string              `json:"lat"`
 	Lng         []string              `json:"lng"`
@@ -105,6 +105,24 @@ type RunnerFact struct {
 	Salience        sql.NullInt16   `json:"salience"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
+}
+
+type Session struct {
+	ID        string    `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type StravaConnection struct {
+	UserID       uuid.UUID `json:"user_id"`
+	AthleteID    int64     `json:"athlete_id"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	Scope        string    `json:"scope"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type User struct {

@@ -18,8 +18,10 @@ require (
 	github.com/go-openapi/validate v0.26.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
+	github.com/lib/pq v1.12.3
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/sqlc-dev/pqtype v0.3.0
+	golang.org/x/oauth2 v0.36.0
 	google.golang.org/adk v1.4.0
 	google.golang.org/genai v1.57.0
 )

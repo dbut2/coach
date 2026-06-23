@@ -25,14 +25,6 @@ templ Settings(s SettingsData) {
 								<button class="btn btn-sm" style="background-color:#FC4C02;color:#fff;border:none">Connect</button>
 							}
 						}
-						<div class="divider my-0"></div>
-						@connection("watch", "#0066CC", "Garmin", s.GarminConnected, "Sleep, HRV, readiness") {
-							if s.GarminConnected {
-								<button class="btn btn-ghost btn-sm text-error">Disconnect</button>
-							} else {
-								<button class="btn btn-outline btn-sm">Connect</button>
-							}
-						}
 					</div>
 				</div>
 			}
