@@ -16,8 +16,8 @@ concurrency:
 
 env:
   GO_DIRS: |
-    - go
-    - tools
+    go: go/**
+    tools: tools/**
 
 jobs:
   dirs:
@@ -26,17 +26,10 @@ jobs:
       matrix: ${{ steps.changed.outputs.changes }}
     steps:
       - uses: actions/checkout@v6
-      - id: filters
-        run: |
-          {
-            echo 'filters<<EOF'
-            yq 'reduce .[] as $d ({}; .[$d] = $d + "/**")' <<< "$GO_DIRS"
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v3
         id: changed
         with:
-          filters: ${{ steps.filters.outputs.filters }}
+          filters: ${{ env.GO_DIRS }}
 
   test:
     name: Go Test
