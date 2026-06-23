@@ -28,12 +28,8 @@ jobs:
         uses: RoryQ/required-checks@v1.2.1
         with:
           required_workflow_patterns: |
-            - Build Check
+            - Go Gate
             - Docker Compose
-            - Go Generate
-            - Go Mod Tidy
-            - Go Test
-            - golangci-lint
           token: ${{ steps.token.outputs.token }}
           initial_delay_seconds: 0
           poll_frequency_seconds: 10
