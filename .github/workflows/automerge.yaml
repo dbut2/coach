@@ -28,8 +28,9 @@ jobs:
         uses: RoryQ/required-checks@v1.2.1
         with:
           required_workflow_patterns: |
-            - Go Gate
             - Docker Compose
+            - Gen Gate
+            - Go Gate
           token: ${{ steps.token.outputs.token }}
           initial_delay_seconds: 0
           poll_frequency_seconds: 10
