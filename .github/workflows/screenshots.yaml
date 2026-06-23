@@ -1,0 +1,44 @@
+name: Update Screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_CLIENT_ID }}
+          private-key: ${{ secrets.GH_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+
+      - uses: actions/cache@v4
+        with:
+          path: .cache/rod
+          key: rod-${{ runner.os }}-${{ hashFiles('tools/go.sum') }}
+
+      - name: Generate screenshots
+        run: make screenshots
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          base: main
+          branch: update-screenshots
+          add-paths: docs/screenshots
+          commit-message: update UI screenshots
+          title: Update UI screenshots
+          body: Regenerated UI screenshots via the Update Screenshots workflow.

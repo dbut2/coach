@@ -1,0 +1,43 @@
+package web
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="en" data-theme="dracula" class="h-full">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+			<meta name="theme-color" content="#047857"/>
+			<title>{ title }</title>
+			<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css"/>
+			<link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css"/>
+			<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+			<script src="https://unpkg.com/lucide@latest"></script>
+		</head>
+		<body class="h-full bg-base-300 text-base-content">
+			<div class="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-base-100 shadow-xl">
+				{ children... }
+			</div>
+			<script>lucide.createIcons()</script>
+		</body>
+	</html>
+}
+
+templ appBar(title string, settings bool) {
+	<header class="navbar min-h-14 border-b border-base-200 bg-base-100/90 px-3 backdrop-blur">
+		<div class="flex flex-1 items-center gap-2">
+			if settings {
+				<a href="/conversation" class="btn btn-ghost btn-circle btn-sm" aria-label="Back">
+					<i data-lucide="arrow-left" class="size-5"></i>
+				</a>
+			}
+			<div class="leading-tight">
+				<div class="text-sm font-semibold">{ title }</div>
+			</div>
+		</div>
+		if !settings {
+			<a href="/settings" class="btn btn-ghost btn-circle btn-sm" aria-label="Settings">
+				<i data-lucide="settings" class="size-5"></i>
+			</a>
+		}
+	</header>
+}
