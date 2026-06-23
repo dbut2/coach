@@ -40,5 +40,7 @@ jobs:
           branch: update-screenshots
           add-paths: docs/screenshots
           commit-message: update UI screenshots
+          committer: dylan-botler[bot] <dylan-botler[bot]@users.noreply.github.com>
+          author: dylan-botler[bot] <dylan-botler[bot]@users.noreply.github.com>
           title: Update UI screenshots
           body: Regenerated UI screenshots via the Update Screenshots workflow.

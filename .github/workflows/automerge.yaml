@@ -21,8 +21,8 @@ jobs:
         id: token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.DBUT2_APP_ID }}
-          private-key: ${{ secrets.DBUT2_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.GH_CLIENT_ID }}
+          private-key: ${{ secrets.GH_PRIVATE_KEY }}
 
       - name: Required Checks
         uses: RoryQ/required-checks@v1.2.1
