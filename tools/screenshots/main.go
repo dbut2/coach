@@ -43,7 +43,6 @@ var sampleConversation = []web.Message{
 var sampleSettings = web.SettingsData{
 	DisplayName:     "Dylan",
 	StravaConnected: true,
-	GarminConnected: false,
 }
 
 func main() {
