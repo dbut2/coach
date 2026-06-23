@@ -23,7 +23,7 @@ require (
 	github.com/sqlc-dev/pqtype v0.3.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/adk v1.4.0
-	google.golang.org/genai v1.57.0
+	google.golang.org/genai v1.61.0
 )
 
 require (
