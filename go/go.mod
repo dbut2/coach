@@ -12,7 +12,7 @@ require (
 	github.com/go-openapi/swag/conv v0.26.0
 	github.com/go-openapi/swag/jsonutils v0.26.0
 	github.com/go-openapi/swag/stringutils v0.26.0
-	github.com/go-openapi/swag/typeutils v0.26.0
+	github.com/go-openapi/swag/typeutils v0.26.1
 	github.com/go-openapi/validate v0.25.3
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
