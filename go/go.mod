@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	dbut.dev/x v0.0.0-20260611154244-981427647aee
+	github.com/a-h/templ v0.3.1020
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-openapi/errors v0.22.8
 	github.com/go-openapi/runtime v0.32.3

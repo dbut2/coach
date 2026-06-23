@@ -1,0 +1,53 @@
+package web
+
+templ Conversation(coachName string, messages []Message) {
+	@Base(coachName) {
+		@appBar(coachName, false)
+		<main id="chat" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+			<div class="my-2 flex justify-center">
+				<span class="rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/60">Today</span>
+			</div>
+			for _, m := range messages {
+				@bubble(m)
+			}
+		</main>
+		<footer class="border-t border-base-200 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+			<form method="post" action="/conversation" class="flex items-end gap-2">
+				<textarea
+					name="message"
+					rows="1"
+					placeholder={ "Message " + coachName }
+					class="textarea textarea-bordered max-h-32 min-h-12 flex-1 resize-none rounded-2xl"
+				></textarea>
+				<button type="submit" class="btn btn-circle btn-primary" aria-label="Send">
+					<i data-lucide="arrow-up" class="size-5"></i>
+				</button>
+			</form>
+		</footer>
+		<script>
+			(() => {
+				const chat = document.getElementById("chat")
+				if (chat) chat.scrollTop = chat.scrollHeight
+			})()
+		</script>
+	}
+}
+
+templ bubble(m Message) {
+	if m.Role == RoleAssistant {
+		<div class="chat chat-start">
+			<div class="avatar placeholder chat-image">
+				<div class="grid size-8 place-items-center rounded-full bg-primary text-primary-content">
+					<i data-lucide="activity" class="size-4"></i>
+				</div>
+			</div>
+			<div class="chat-bubble bg-base-200 text-base-content">{ m.Content }</div>
+			<div class="chat-footer mt-1 text-xs text-base-content/40">{ m.Time }</div>
+		</div>
+	} else {
+		<div class="chat chat-end">
+			<div class="chat-bubble chat-bubble-primary">{ m.Content }</div>
+			<div class="chat-footer mt-1 text-xs text-base-content/40">{ m.Time }</div>
+		</div>
+	}
+}

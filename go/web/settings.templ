@@ -1,0 +1,72 @@
+package web
+
+templ Settings(s SettingsData) {
+	@Base("Settings") {
+		@appBar("Settings", true)
+		<main class="flex-1 space-y-6 overflow-y-auto px-4 py-5">
+			@section("Profile") {
+				<form method="post" action="/settings" class="card border border-base-200 bg-base-100">
+					<div class="card-body gap-4 p-4">
+						<label class="form-control">
+							<span class="label-text mb-1 text-sm text-base-content/60">Display name</span>
+							<input type="text" name="display_name" value={ s.DisplayName } class="input input-bordered" placeholder="Your name"/>
+						</label>
+						<button type="submit" class="btn btn-primary btn-sm self-end">Save</button>
+					</div>
+				</form>
+			}
+			@section("Connections") {
+				<div class="card border border-base-200 bg-base-100">
+					<div class="card-body gap-0 p-0">
+						@connection("zap", "#FC4C02", "Strava", s.StravaConnected, "Activity sync") {
+							if s.StravaConnected {
+								<button class="btn btn-ghost btn-sm text-error">Disconnect</button>
+							} else {
+								<button class="btn btn-sm" style="background-color:#FC4C02;color:#fff;border:none">Connect</button>
+							}
+						}
+						<div class="divider my-0"></div>
+						@connection("watch", "#0066CC", "Garmin", s.GarminConnected, "Sleep, HRV, readiness") {
+							if s.GarminConnected {
+								<button class="btn btn-ghost btn-sm text-error">Disconnect</button>
+							} else {
+								<button class="btn btn-outline btn-sm">Connect</button>
+							}
+						}
+					</div>
+				</div>
+			}
+			<button class="btn btn-block btn-ghost text-error">
+				<i data-lucide="log-out" class="size-4"></i>
+				Sign out
+			</button>
+		</main>
+	}
+}
+
+templ section(title string) {
+	<section class="space-y-2">
+		<h2 class="px-1 text-xs font-semibold uppercase tracking-wide text-base-content/50">{ title }</h2>
+		{ children... }
+	</section>
+}
+
+templ connection(icon string, color string, name string, connected bool, detail string) {
+	<div class="flex items-center gap-3 p-4">
+		<div class="grid size-10 shrink-0 place-items-center rounded-xl text-white" style={ "background-color:" + color }>
+			<i data-lucide={ icon } class="size-5"></i>
+		</div>
+		<div class="min-w-0 flex-1">
+			<div class="text-sm font-medium">{ name }</div>
+			<div class="truncate text-xs text-base-content/60">{ connStatus(connected, detail) }</div>
+		</div>
+		{ children... }
+	</div>
+}
+
+func connStatus(connected bool, detail string) string {
+	if connected {
+		return "Connected"
+	}
+	return detail
+}
