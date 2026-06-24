@@ -7,8 +7,10 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 const insertMessage = `-- name: InsertMessage :one
@@ -36,6 +38,22 @@ func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) (M
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const insertToolMessage = `-- name: InsertToolMessage :exec
+INSERT INTO messages (user_id, role, content, tool_name, tool_payload)
+VALUES ($1, 'tool', '', $2, $3)
+`
+
+type InsertToolMessageParams struct {
+	UserID      uuid.UUID             `json:"user_id"`
+	ToolName    sql.NullString        `json:"tool_name"`
+	ToolPayload pqtype.NullRawMessage `json:"tool_payload"`
+}
+
+func (q *Queries) InsertToolMessage(ctx context.Context, arg InsertToolMessageParams) error {
+	_, err := q.db.ExecContext(ctx, insertToolMessage, arg.UserID, arg.ToolName, arg.ToolPayload)
+	return err
 }
 
 const listRecentMessages = `-- name: ListRecentMessages :many

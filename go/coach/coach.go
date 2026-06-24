@@ -2,6 +2,7 @@ package coach
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -183,7 +184,17 @@ func (c *Coach) Reply(ctx context.Context, userID string, tz *time.Location, tex
 		if err != nil {
 			return "", fmt.Errorf("coach: run: %w", err)
 		}
-		if event.IsFinalResponse() && event.Content != nil {
+		if event.Content == nil {
+			continue
+		}
+		if !event.Partial {
+			for _, part := range event.Content.Parts {
+				if part.FunctionCall != nil {
+					c.recordToolCall(ctx, uid, part.FunctionCall)
+				}
+			}
+		}
+		if event.IsFinalResponse() {
 			for _, part := range event.Content.Parts {
 				b.WriteString(part.Text)
 			}
@@ -197,6 +208,21 @@ func (c *Coach) Reply(ctx context.Context, userID string, tz *time.Location, tex
 		}
 	}
 	return reply, nil
+}
+
+func (c *Coach) recordToolCall(ctx context.Context, userID uuid.UUID, fc *genai.FunctionCall) {
+	if fc == nil || fc.Name == "" {
+		return
+	}
+	var payload json.RawMessage
+	if len(fc.Args) > 0 {
+		if raw, err := json.Marshal(fc.Args); err == nil {
+			payload = raw
+		}
+	}
+	if err := c.store.AppendToolCall(ctx, userID, fc.Name, payload); err != nil {
+		slog.Warn("coach record tool call", "tool", fc.Name, "error", err)
+	}
 }
 
 func (c *Coach) seed(ctx context.Context, userID, sessionID string, history []Turn) error {

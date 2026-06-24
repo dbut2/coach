@@ -27,6 +27,14 @@ func (s coachStore) AppendMessage(ctx context.Context, userID uuid.UUID, role, c
 	return m.ID, nil
 }
 
+func (s coachStore) AppendToolCall(ctx context.Context, userID uuid.UUID, name string, payload json.RawMessage) error {
+	return s.q.InsertToolMessage(ctx, database.InsertToolMessageParams{
+		UserID:      userID,
+		ToolName:    sql.NullString{String: name, Valid: name != ""},
+		ToolPayload: pqtype.NullRawMessage{RawMessage: payload, Valid: len(payload) > 0},
+	})
+}
+
 func (s coachStore) RecentMessages(ctx context.Context, userID uuid.UUID, limit int) ([]coach.Turn, error) {
 	rows, err := s.q.ListRecentMessages(ctx, database.ListRecentMessagesParams{UserID: userID, Limit: int32(limit)})
 	if err != nil {
@@ -34,6 +42,9 @@ func (s coachStore) RecentMessages(ctx context.Context, userID uuid.UUID, limit 
 	}
 	turns := make([]coach.Turn, 0, len(rows))
 	for _, m := range rows {
+		if m.Role == coach.RoleTool {
+			continue
+		}
 		turns = append(turns, coach.Turn{Role: m.Role, Content: m.Content})
 	}
 	return turns, nil

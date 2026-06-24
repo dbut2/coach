@@ -31,6 +31,7 @@ type Querier interface {
 	InsertMessage(ctx context.Context, arg InsertMessageParams) (Message, error)
 	InsertPlanProposal(ctx context.Context, arg InsertPlanProposalParams) (PlanChangeProposal, error)
 	InsertRunnerFact(ctx context.Context, arg InsertRunnerFactParams) (RunnerFact, error)
+	InsertToolMessage(ctx context.Context, arg InsertToolMessageParams) error
 	ListActiveRunnerFacts(ctx context.Context, userID uuid.UUID) ([]RunnerFact, error)
 	ListActivitiesByUser(ctx context.Context, arg ListActivitiesByUserParams) ([]Activity, error)
 	ListActivityStreamsByUser(ctx context.Context, arg ListActivityStreamsByUserParams) ([]ActivityStream, error)

@@ -20,6 +20,9 @@ type fakeStore struct {
 func (f *fakeStore) AppendMessage(context.Context, uuid.UUID, string, string) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
+func (f *fakeStore) AppendToolCall(context.Context, uuid.UUID, string, json.RawMessage) error {
+	return nil
+}
 func (f *fakeStore) RecentMessages(context.Context, uuid.UUID, int) ([]Turn, error) { return nil, nil }
 func (f *fakeStore) RecordFact(context.Context, uuid.UUID, Fact) error              { return nil }
 func (f *fakeStore) ActiveFacts(context.Context, uuid.UUID) ([]Fact, error)         { return nil, nil }
