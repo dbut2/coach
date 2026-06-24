@@ -17,8 +17,12 @@ type Querier interface {
 	CreateUser(ctx context.Context, displayName sql.NullString) (User, error)
 	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
 	DeleteSession(ctx context.Context, id string) error
+	GetActivityStream(ctx context.Context, activityID uuid.UUID) (ActivityStream, error)
 	GetSessionUser(ctx context.Context, id string) (GetSessionUserRow, error)
 	GetStravaConnectionByAthleteID(ctx context.Context, athleteID int64) (StravaConnection, error)
+	ListActivitiesByUser(ctx context.Context, arg ListActivitiesByUserParams) ([]Activity, error)
+	ListActivityStreamsByUser(ctx context.Context, arg ListActivityStreamsByUserParams) ([]ActivityStream, error)
+	ListWellnessByUser(ctx context.Context, arg ListWellnessByUserParams) ([]WellnessMetric, error)
 	Null(ctx context.Context) (int32, error)
 	UpdateStravaTokens(ctx context.Context, arg UpdateStravaTokensParams) error
 	UpsertActivity(ctx context.Context, arg UpsertActivityParams) (uuid.UUID, error)
