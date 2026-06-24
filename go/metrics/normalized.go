@@ -6,7 +6,11 @@ import "math"
 // relative to the flat, from Minetti et al. (2002) energy-cost polynomial.
 func gradeAdjustFactor(g float64) float64 {
 	g = clamp(g, -0.45, 0.45)
-	cr := 155.4*math.Pow(g, 5) - 30.4*math.Pow(g, 4) - 43.3*math.Pow(g, 3) + 46.3*g*g + 19.5*g + 3.6
+	g2 := g * g
+	g3 := g2 * g
+	g4 := g3 * g
+	g5 := g4 * g
+	cr := 155.4*g5 - 30.4*g4 - 43.3*g3 + 46.3*g2 + 19.5*g + 3.6
 	const flat = 3.6
 	return math.Max(0.2, cr/flat)
 }
@@ -45,7 +49,7 @@ func normalized(times []int, vals []float64) float64 {
 	var cnt int
 	for _, v := range smoothed {
 		if v > 0 {
-			sum += math.Pow(v, 4)
+			sum += v * v * v * v
 			cnt++
 		}
 	}
