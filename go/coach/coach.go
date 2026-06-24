@@ -84,14 +84,19 @@ func New(ctx context.Context, cfg Config, src MetricsSource) (*Coach, error) {
 		return nil, errors.New("coach: model is required")
 	}
 
-	mdl := newClaudeModel(cfg.APIKey, cfg.Model)
+	tel, err := newTelemetry()
+	if err != nil {
+		return nil, fmt.Errorf("coach: init telemetry: %w", err)
+	}
+
+	mdl := newClaudeModel(cfg.APIKey, cfg.Model, tel)
 
 	loc, err := time.LoadLocation(cfg.DefaultTimezone)
 	if err != nil {
 		return nil, fmt.Errorf("coach: invalid default timezone %q: %w", cfg.DefaultTimezone, err)
 	}
 
-	c := &Coach{defaultLocation: loc}
+	c := &Coach{defaultLocation: loc, src: src}
 
 	tools, err := c.tools()
 	if err != nil {
@@ -105,6 +110,7 @@ func New(ctx context.Context, cfg Config, src MetricsSource) (*Coach, error) {
 		Instruction:         persona,
 		Tools:               tools,
 		AfterModelCallbacks: []llmagent.AfterModelCallback{logUsage},
+		AfterToolCallbacks:  []llmagent.AfterToolCallback{tel.afterTool},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("coach: init agent: %w", err)
