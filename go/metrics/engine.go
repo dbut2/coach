@@ -34,7 +34,26 @@ type Snapshot struct {
 	Performance PerformanceModel
 	Weekly      []WeekSummary
 	Recent      []ActivityMetrics
+	Wellness    []Wellness
 	ActivityN   int
+}
+
+const wellnessWindow = 14 * 24 * time.Hour
+
+func recentWellness(ws []Wellness, asOf time.Time) []Wellness {
+	cutoff := asOf.Add(-wellnessWindow)
+	var out []Wellness
+	for _, w := range ws {
+		if w.Date.Before(cutoff) {
+			continue
+		}
+		if !w.HasHRV() && !w.HasRestingHR() && !w.HasSleep() {
+			continue
+		}
+		out = append(out, w)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Date.After(out[j].Date) })
+	return out
 }
 
 func BuildSnapshot(acts []Activity, wellness []Wellness, opts Options) Snapshot {
@@ -56,6 +75,7 @@ func BuildSnapshot(acts []Activity, wellness []Wellness, opts Options) Snapshot 
 		Performance: BuildPerformanceModel(acts, thr),
 		Weekly:      tailWeeks(WeeklySummaries(acts, thr), opts.WeeklyHistory),
 		Recent:      recentAnalyses(acts, thr, asOf.Add(-opts.RecentWindow)),
+		Wellness:    recentWellness(wellness, asOf),
 		ActivityN:   len(acts),
 	}
 	if p, ok := series.Latest(); ok {

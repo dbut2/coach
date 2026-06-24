@@ -31,7 +31,7 @@ func (c *Coach) snapshot(tc agent.ToolContext, opts metrics.Options) (metrics.Sn
 func (c *Coach) metricsTools() ([]tool.Tool, error) {
 	status, err := functiontool.New(functiontool.Config{
 		Name:        "training_status",
-		Description: "Current training state for the athlete: fitness (CTL), fatigue (ATL), form (TSB), acute:chronic workload ratio, ramp and trajectory, recovery readiness (with HRV and sleep when available), estimated thresholds, and race-time predictions. Use for big-picture questions about how training is going and whether to push or back off.",
+		Description: "Measured training state for the athlete: fitness (CTL), fatigue (ATL), form (TSB), acute:chronic workload ratio, ramp, estimated thresholds (HR, pace, FTP), demonstrated capacity (VO2max, VDOT, critical speed), and recent wellness when available (daily HRV, resting HR, sleep). These are measurements, not verdicts — read them and make the call on readiness, trajectory and race outcome yourself. Use for big-picture questions about how training is going.",
 	}, func(tc agent.ToolContext, _ struct{}) (trainingStatus, error) {
 		snap, err := c.snapshot(tc, metrics.Options{})
 		if err != nil {
@@ -99,10 +99,9 @@ type trainingStatus struct {
 	AsOf        string         `json:"as_of,omitempty"`
 	Activities  int            `json:"activity_count"`
 	Fitness     *fitnessDTO    `json:"fitness,omitempty"`
-	Trajectory  trajectoryDTO  `json:"trajectory"`
-	Recovery    recoveryDTO    `json:"recovery"`
 	Thresholds  thresholdsDTO  `json:"thresholds"`
 	Performance performanceDTO `json:"performance"`
+	Wellness    []wellnessDTO  `json:"wellness,omitempty"`
 }
 
 type fitnessDTO struct {
@@ -110,30 +109,10 @@ type fitnessDTO struct {
 	CTL      float64 `json:"ctl" jsonschema:"chronic training load (fitness)"`
 	ATL      float64 `json:"atl" jsonschema:"acute training load (fatigue)"`
 	TSB      float64 `json:"tsb" jsonschema:"training stress balance (form = ctl - atl)"`
-	ACWR     float64 `json:"acwr" jsonschema:"acute:chronic workload ratio; above 1.5 is injury-risk territory"`
+	ACWR     float64 `json:"acwr" jsonschema:"acute:chronic workload ratio (7-day load mean / 28-day load mean)"`
 	Ramp     float64 `json:"ramp_per_week" jsonschema:"weekly change in ctl"`
 	Monotony float64 `json:"monotony"`
 	Strain   float64 `json:"strain"`
-}
-
-type trajectoryDTO struct {
-	State string   `json:"state" jsonschema:"building, maintaining, detraining, spiking, tapering, or detrained"`
-	Note  string   `json:"note,omitempty"`
-	Flags []string `json:"flags,omitempty"`
-}
-
-type recoveryDTO struct {
-	Score           float64  `json:"score" jsonschema:"recovery readiness 0-100"`
-	State           string   `json:"state"`
-	Recommendation  string   `json:"recommendation,omitempty"`
-	TSB             float64  `json:"tsb"`
-	ACWR            float64  `json:"acwr"`
-	Monotony        float64  `json:"monotony"`
-	HRVStatus       string   `json:"hrv_status,omitempty"`
-	HRVDeviationPct float64  `json:"hrv_deviation_pct,omitempty"`
-	SleepDebtMin    float64  `json:"sleep_debt_min,omitempty"`
-	SuggestedRest   int      `json:"suggested_rest_days"`
-	Inputs          []string `json:"inputs,omitempty" jsonschema:"which signals fed the score (training_load, hrv, sleep)"`
 }
 
 type thresholdsDTO struct {
@@ -146,17 +125,16 @@ type thresholdsDTO struct {
 }
 
 type performanceDTO struct {
-	VO2Max        float64       `json:"vo2max,omitempty"`
-	VDOT          float64       `json:"vdot,omitempty"`
-	CriticalSpeed float64       `json:"critical_speed_ms,omitempty"`
-	Predictions   []racePredDTO `json:"race_predictions,omitempty"`
+	VO2Max        float64 `json:"vo2max,omitempty"`
+	VDOT          float64 `json:"vdot,omitempty"`
+	CriticalSpeed float64 `json:"critical_speed_ms,omitempty"`
 }
 
-type racePredDTO struct {
-	Race   string `json:"race"`
-	Time   string `json:"time"`
-	Pace   string `json:"pace"`
-	Method string `json:"method,omitempty"`
+type wellnessDTO struct {
+	Date       string  `json:"date"`
+	HRV        float64 `json:"hrv,omitempty"`
+	RestingHR  float64 `json:"resting_hr,omitempty"`
+	SleepHours float64 `json:"sleep_hours,omitempty"`
 }
 
 type weekDTO struct {
@@ -201,10 +179,9 @@ func toTrainingStatus(s metrics.Snapshot) trainingStatus {
 	ts := trainingStatus{
 		AsOf:        fmtDate(s.AsOf),
 		Activities:  s.ActivityN,
-		Trajectory:  trajectoryDTO{State: string(s.Trajectory.Trajectory), Note: s.Trajectory.Note, Flags: s.Trajectory.Flags},
-		Recovery:    toRecovery(s.Recovery),
 		Thresholds:  toThresholds(s.Thresholds),
 		Performance: toPerformance(s.Performance),
+		Wellness:    toWellness(s.Wellness),
 	}
 	if s.HasFitness {
 		f := s.Fitness
@@ -220,22 +197,6 @@ func toTrainingStatus(s metrics.Snapshot) trainingStatus {
 		}
 	}
 	return ts
-}
-
-func toRecovery(r metrics.RecoveryStatus) recoveryDTO {
-	return recoveryDTO{
-		Score:           r.Score,
-		State:           r.State,
-		Recommendation:  r.Recommendation,
-		TSB:             r.TSB,
-		ACWR:            r.ACWR,
-		Monotony:        r.Monotony,
-		HRVStatus:       r.HRVStatus,
-		HRVDeviationPct: r.HRVDeviation,
-		SleepDebtMin:    r.SleepDebtMin,
-		SuggestedRest:   r.SuggestedRest,
-		Inputs:          r.Inputs,
-	}
 }
 
 func toThresholds(t metrics.Thresholds) thresholdsDTO {
@@ -256,16 +217,19 @@ func toThresholds(t metrics.Thresholds) thresholdsDTO {
 }
 
 func toPerformance(p metrics.PerformanceModel) performanceDTO {
-	dto := performanceDTO{VO2Max: p.VO2Max, VDOT: p.VDOT, CriticalSpeed: p.CriticalSpeedMS}
-	for _, pr := range p.Predictions {
-		dto.Predictions = append(dto.Predictions, racePredDTO{
-			Race:   pr.Label,
-			Time:   fmtDurD(pr.Time),
-			Pace:   fmtPace(pr.PaceSPerKm),
-			Method: pr.Method,
-		})
+	return performanceDTO{VO2Max: p.VO2Max, VDOT: p.VDOT, CriticalSpeed: p.CriticalSpeedMS}
+}
+
+func toWellness(ws []metrics.Wellness) []wellnessDTO {
+	out := make([]wellnessDTO, 0, len(ws))
+	for _, w := range ws {
+		d := wellnessDTO{Date: fmtDate(w.Date), HRV: w.HRV, RestingHR: w.RestingHR}
+		if w.SleepMin > 0 {
+			d.SleepHours = math.Round(w.SleepMin/60*10) / 10
+		}
+		out = append(out, d)
 	}
-	return dto
+	return out
 }
 
 func toWeekly(ws []metrics.WeekSummary) []weekDTO {
@@ -358,8 +322,6 @@ func fmtDur(seconds int) string {
 	}
 	return fmt.Sprintf("%d:%02d", m, s)
 }
-
-func fmtDurD(d time.Duration) string { return fmtDur(int(d.Seconds())) }
 
 func fmtDate(t time.Time) string {
 	if t.IsZero() {
