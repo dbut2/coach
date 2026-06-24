@@ -79,7 +79,10 @@ func (m *claudeLLM) buildParams(req *model.LLMRequest) (anthropic.MessageNewPara
 				b.WriteString(p.Text)
 			}
 			if b.Len() > 0 {
-				params.System = []anthropic.TextBlockParam{{Text: b.String()}}
+				params.System = []anthropic.TextBlockParam{{
+					Text:         b.String(),
+					CacheControl: anthropic.NewCacheControlEphemeralParam(),
+				}}
 			}
 		}
 
@@ -98,9 +101,29 @@ func (m *claudeLLM) buildParams(req *model.LLMRequest) (anthropic.MessageNewPara
 	if err != nil {
 		return params, err
 	}
+	cacheLastBlock(msgs)
 	params.Messages = msgs
 
 	return params, nil
+}
+
+func cacheLastBlock(msgs []anthropic.MessageParam) {
+	if len(msgs) == 0 {
+		return
+	}
+	blocks := msgs[len(msgs)-1].Content
+	if len(blocks) == 0 {
+		return
+	}
+	cc := anthropic.NewCacheControlEphemeralParam()
+	switch b := &blocks[len(blocks)-1]; {
+	case b.OfText != nil:
+		b.OfText.CacheControl = cc
+	case b.OfToolUse != nil:
+		b.OfToolUse.CacheControl = cc
+	case b.OfToolResult != nil:
+		b.OfToolResult.CacheControl = cc
+	}
 }
 
 func toAnthropicMessages(contents []*genai.Content) ([]anthropic.MessageParam, error) {
