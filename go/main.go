@@ -51,7 +51,11 @@ func run() error {
 		return fmt.Errorf("ping: %w", err)
 	}
 
-	return service.New(db, cfg.Service).Run(ctx)
+	svc, err := service.New(ctx, db, cfg.Service)
+	if err != nil {
+		return fmt.Errorf("service: %w", err)
+	}
+	return svc.Run(ctx)
 }
 
 func migrate(db *sql.DB, dir string) error {

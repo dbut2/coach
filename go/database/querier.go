@@ -23,13 +23,18 @@ type Querier interface {
 	GetPlannedWorkout(ctx context.Context, id uuid.UUID) (PlannedWorkout, error)
 	GetSessionUser(ctx context.Context, id string) (GetSessionUserRow, error)
 	GetStravaConnectionByAthleteID(ctx context.Context, athleteID int64) (StravaConnection, error)
+	InsertMessage(ctx context.Context, arg InsertMessageParams) (Message, error)
+	InsertRunnerFact(ctx context.Context, arg InsertRunnerFactParams) (RunnerFact, error)
+	ListActiveRunnerFacts(ctx context.Context, userID uuid.UUID) ([]RunnerFact, error)
 	ListActivitiesByUser(ctx context.Context, arg ListActivitiesByUserParams) ([]Activity, error)
 	ListActivityStreamsByUser(ctx context.Context, arg ListActivityStreamsByUserParams) ([]ActivityStream, error)
 	ListGarminConnections(ctx context.Context) ([]GarminConnection, error)
+	ListRecentMessages(ctx context.Context, arg ListRecentMessagesParams) ([]Message, error)
 	ListWellnessByUser(ctx context.Context, arg ListWellnessByUserParams) ([]WellnessMetric, error)
 	Null(ctx context.Context) (int32, error)
 	SetPlannedWorkoutGarmin(ctx context.Context, arg SetPlannedWorkoutGarminParams) error
 	UpdateGarminLastSync(ctx context.Context, arg UpdateGarminLastSyncParams) error
+	UpdateRunnerFactStatus(ctx context.Context, arg UpdateRunnerFactStatusParams) error
 	UpdateStravaTokens(ctx context.Context, arg UpdateStravaTokensParams) error
 	UpsertActivity(ctx context.Context, arg UpsertActivityParams) (uuid.UUID, error)
 	UpsertActivityStream(ctx context.Context, arg UpsertActivityStreamParams) error
