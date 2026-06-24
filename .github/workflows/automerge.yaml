@@ -24,6 +24,15 @@ jobs:
           client-id: ${{ secrets.GH_CLIENT_ID }}
           private-key: ${{ secrets.GH_PRIVATE_KEY }}
 
+      - name: Get PR head SHA
+        id: pr-sha
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          SHA=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER --jq '.head.sha')
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - name: Required Checks
         uses: RoryQ/required-checks@v1.2.1
         with:
@@ -32,6 +41,7 @@ jobs:
             - Gen Gate
             - Go Gate
           token: ${{ steps.token.outputs.token }}
+          target_sha: ${{ steps.pr-sha.outputs.sha }}
           initial_delay_seconds: 0
           poll_frequency_seconds: 10
           missing_required_retry_count: 10
