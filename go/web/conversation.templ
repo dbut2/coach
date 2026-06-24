@@ -4,20 +4,25 @@ templ Conversation(coachName string, messages []Message, pending int, debug bool
 	@Base(coachName) {
 		@conversationBar(coachName, debug)
 		@PendingBanner(pending)
-		<main id="chat" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+		<main id="chat" class="flex-1 overflow-y-auto px-3 py-4" hx-ext="sse" sse-connect="/conversation/events">
 			<div class="my-2 flex justify-center">
 				<span class="rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/60">Today</span>
 			</div>
-			for _, m := range messages {
-				if m.Role == RoleTool {
-					@toolTrace(m)
-				} else {
-					@bubble(m)
+			<div id="thread" class="space-y-1" sse-swap={ threadEvents(debug) } hx-swap="beforeend">
+				for _, m := range messages {
+					@Fragment(m)
 				}
-			}
+			</div>
+			<div id="typing" sse-swap="typing" hx-swap="innerHTML"></div>
 		</main>
 		<footer class="border-t border-base-200 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-			<form method="post" action="/conversation" class="flex items-end gap-2">
+			<form
+				hx-post="/conversation"
+				hx-target="#thread"
+				hx-swap="beforeend"
+				hx-on::after-request="this.reset()"
+				class="flex items-end gap-2"
+			>
 				<textarea
 					name="message"
 					rows="1"
@@ -32,10 +37,41 @@ templ Conversation(coachName string, messages []Message, pending int, debug bool
 		<script>
 			(() => {
 				const chat = document.getElementById("chat")
-				if (chat) chat.scrollTop = chat.scrollHeight
+				const bottom = () => { if (chat) chat.scrollTop = chat.scrollHeight }
+				bottom()
+				document.body.addEventListener("htmx:afterSwap", () => { lucide.createIcons(); bottom() })
+				document.body.addEventListener("htmx:sseMessage", () => { lucide.createIcons(); bottom() })
 			})()
 		</script>
 	}
+}
+
+func threadEvents(debug bool) string {
+	if debug {
+		return "message,tool"
+	}
+	return "message"
+}
+
+templ Fragment(m Message) {
+	if m.Role == RoleTool {
+		@toolTrace(m)
+	} else {
+		@bubble(m)
+	}
+}
+
+templ Typing() {
+	<div class="chat chat-start">
+		<div class="avatar placeholder chat-image">
+			<div class="grid size-8 place-items-center rounded-full bg-primary text-primary-content">
+				<i data-lucide="activity" class="size-4"></i>
+			</div>
+		</div>
+		<div class="chat-bubble bg-base-200 text-base-content">
+			<span class="loading loading-dots loading-sm align-middle"></span>
+		</div>
+	</div>
 }
 
 templ conversationBar(coachName string, debug bool) {

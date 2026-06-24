@@ -2,9 +2,13 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sqlc-dev/pqtype"
@@ -85,14 +89,57 @@ func (s *Service) sendMessage(c *gin.Context) {
 	user := currentUser(c)
 	text := strings.TrimSpace(c.PostForm("message"))
 	if text == "" {
-		c.Redirect(http.StatusSeeOther, "/conversation")
+		c.Status(http.StatusNoContent)
 		return
 	}
-	if _, err := s.coach.Reply(c.Request.Context(), user.ID.String(), s.loc, text); err != nil {
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
+
+	go func() {
+		uid := user.ID.String()
+		s.hub.broadcast(uid, "typing", renderHTML(web.Typing()))
+		defer s.hub.broadcast(uid, "typing", "")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		if _, err := s.coach.Reply(ctx, uid, s.loc, text); err != nil {
+			slog.Error("coach reply", "user", uid, "error", err)
+		}
+	}()
+
+	render(c, http.StatusOK, web.Fragment(web.Message{
+		Role:    web.RoleUser,
+		Content: text,
+		Time:    time.Now().In(s.loc).Format("3:04 PM"),
+	}))
+}
+
+func (s *Service) conversationEvents(c *gin.Context) {
+	user := currentUser(c)
+	ch, cancel := s.hub.subscribe(user.ID.String())
+	defer cancel()
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Writer.Flush()
+
+	keepalive := time.NewTicker(25 * time.Second)
+	defer keepalive.Stop()
+	for {
+		select {
+		case <-c.Request.Context().Done():
+			return
+		case <-keepalive.C:
+			_, _ = fmt.Fprint(c.Writer, ": ping\n\n")
+			c.Writer.Flush()
+		case ev := <-ch:
+			_, _ = fmt.Fprintf(c.Writer, "event: %s\n", ev.name)
+			for _, line := range strings.Split(ev.html, "\n") {
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n", line)
+			}
+			_, _ = fmt.Fprint(c.Writer, "\n")
+			c.Writer.Flush()
+		}
 	}
-	c.Redirect(http.StatusSeeOther, "/conversation")
 }
 
 func (s *Service) settings(c *gin.Context) {
