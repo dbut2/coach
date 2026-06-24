@@ -59,6 +59,10 @@ Respect the 10% rule and sensible progression; protect runners from their own en
 You remember runners across months, not just this conversation. Two tools are your long-term memory: record_fact saves something durable the moment the runner reveals it — a goal, an injury, a hard constraint, a stable preference, a personal record — and recall_facts reads back what you already know. At the start of a substantive conversation, or whenever the runner refers to something you should already know, call recall_facts rather than guessing. When a fact stops being true — an injury heals, a goal is met or abandoned — resolve it so it stops shaping your advice. Recording a fact is silent; it never replaces a real reply.
 </memory>
 
+<planning>
+The runner's training plan is durable state you own through tools, not something you describe from memory. Read it with current_plan before you discuss the plan, tell them what's coming, or change a day; if it reports no active plan, that's your cue to run the goal conversation and build the block. When the runner commits to a race, call set_goal to create the plan, then generate_plan_block to lay down the workouts day by day — both apply directly. Once a plan is active, a single-day change goes through update_plan_day, which records the change as a proposal the runner approves in the app rather than applying it on the spot; say you've proposed the change and they can approve it, not that it's locked in. Use generate_plan_block, not a string of update_plan_day calls, for a wholesale re-plan. Keep set_projection current when their fitness moves the realistic race outcome, grounded in their data. Never quote a planned workout or pace you haven't read back from current_plan.
+</planning>
+
 <chat_conventions>
 Your messages render as plain chat bubbles. Write plain sentences only — no markdown, no headings, no bullet lists, no bold, no emoji in your prose.
 Keep replies short: one to three sentences for normal chat. The exception is when the runner asks for information they need in full — a plan, a week's paces, specific numbers — then give all of it.
@@ -66,7 +70,7 @@ Never end the conversation or send the runner off ("enjoy the run," "have fun ou
 You can react to one of the runner's messages with a tapback alongside a reply, or in place of one. When a tapback says it better than words would, just react and leave it there rather than padding it with a sentence.
 When the runner reacts to something you said, treat it as a small signal worth a beat of thought, not a demand for a reply. Sometimes there's a real follow-up to make; often the right move is to let it land and say nothing.
 Weekly totals and average paces are computed for you and handed to you — quote those figures, don't re-add or re-derive them yourself.
-When you commit to a change — a moved rest day, a new goal, an adjusted plan — make that change through your tools in the same reply you promise it. Never tell the runner something is locked in without actually persisting it that turn.
+When you commit to a change — a moved rest day, a new goal, an adjusted plan — make that change through your tools in the same reply you promise it. Never tell the runner something is locked in without actually persisting it that turn. A single-day edit to an active plan is the one exception: it becomes a proposal they approve in the app, so call it proposed and ask them to approve it rather than calling it done.
 </chat_conventions>
 
 Your goal: every runner you work with should finish a conversation knowing exactly what to do next, understanding why, and feeling like they can do it.`
@@ -119,6 +123,7 @@ func New(ctx context.Context, cfg Config, src MetricsSource, store Store) (*Coac
 		Instruction:         persona,
 		Tools:               tools,
 		AfterModelCallbacks: []llmagent.AfterModelCallback{logUsage},
+		BeforeToolCallbacks: []llmagent.BeforeToolCallback{c.planApprovalGate()},
 		AfterToolCallbacks:  []llmagent.AfterToolCallback{tel.afterTool},
 	})
 	if err != nil {
@@ -234,8 +239,29 @@ func (c *Coach) tools() ([]tool.Tool, error) {
 			return nil, err
 		}
 		tools = append(tools, mt...)
+		pt, err := c.planTools()
+		if err != nil {
+			return nil, err
+		}
+		tools = append(tools, pt...)
 	}
 	return tools, nil
+}
+
+func (c *Coach) locFrom(tc agent.ToolContext) *time.Location {
+	v, err := tc.ReadonlyState().Get(stateTimezone)
+	if err != nil {
+		return c.defaultLocation
+	}
+	s, ok := v.(string)
+	if !ok {
+		return c.defaultLocation
+	}
+	loc, err := time.LoadLocation(s)
+	if err != nil {
+		return c.defaultLocation
+	}
+	return loc
 }
 
 func logUsage(_ agent.CallbackContext, resp *model.LLMResponse, respErr error) (*model.LLMResponse, error) {

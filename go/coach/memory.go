@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/adk/agent"
@@ -42,6 +43,13 @@ type Store interface {
 	RecordFact(ctx context.Context, userID uuid.UUID, f Fact) error
 	ActiveFacts(ctx context.Context, userID uuid.UUID) ([]Fact, error)
 	SetFactStatus(ctx context.Context, userID, factID uuid.UUID, status string) error
+
+	ActivePlan(ctx context.Context, userID uuid.UUID) (*Plan, error)
+	CreatePlan(ctx context.Context, userID uuid.UUID, name string, start, end time.Time) (Plan, error)
+	UpdatePlan(ctx context.Context, userID, planID uuid.UUID, name string, start, end time.Time, projection string) error
+	UpsertPlanDay(ctx context.Context, userID, planID uuid.UUID, d PlanDay) error
+	PlannedWorkouts(ctx context.Context, userID uuid.UUID, from, to time.Time) ([]PlannedWorkout, error)
+	CreateProposal(ctx context.Context, userID, planID uuid.UUID, rationale string, diff json.RawMessage, sourceMessageID uuid.UUID) (uuid.UUID, error)
 }
 
 type factValue struct {

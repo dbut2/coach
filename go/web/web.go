@@ -19,3 +19,13 @@ type SettingsData struct {
 	GarminConnected bool
 	GarminState     string
 }
+
+type Proposal struct {
+	ID         string
+	Rationale  string
+	Date       string
+	Weekday    string
+	Workout    string
+	Detail     string
+	DistanceKm float64
+}

@@ -36,7 +36,7 @@ func (s *Service) conversation(c *gin.Context) {
 			Time:    m.CreatedAt.In(s.loc).Format("3:04 PM"),
 		})
 	}
-	render(c, http.StatusOK, web.Conversation(s.cfg.CoachName, msgs))
+	render(c, http.StatusOK, web.Conversation(s.cfg.CoachName, msgs, s.pendingProposals(c, user.ID)))
 }
 
 func (s *Service) sendMessage(c *gin.Context) {

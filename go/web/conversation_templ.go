@@ -8,7 +8,7 @@ package web
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Conversation(coachName string, messages []Message) templ.Component {
+func Conversation(coachName string, messages []Message, pending int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -45,7 +45,15 @@ func Conversation(coachName string, messages []Message) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <main id=\"chat\" class=\"flex-1 space-y-1 overflow-y-auto px-3 py-4\"><div class=\"my-2 flex justify-center\"><span class=\"rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/60\">Today</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = PendingBanner(pending).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " <main id=\"chat\" class=\"flex-1 space-y-1 overflow-y-auto px-3 py-4\"><div class=\"my-2 flex justify-center\"><span class=\"rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/60\">Today</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -55,20 +63,20 @@ func Conversation(coachName string, messages []Message) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</main><footer class=\"border-t border-base-200 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]\"><form method=\"post\" action=\"/conversation\" class=\"flex items-end gap-2\"><textarea name=\"message\" rows=\"1\" placeholder=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</main><footer class=\"border-t border-base-200 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]\"><form method=\"post\" action=\"/conversation\" class=\"flex items-end gap-2\"><textarea name=\"message\" rows=\"1\" placeholder=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue("Message " + coachName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 19, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 20, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"textarea textarea-bordered max-h-32 min-h-12 flex-1 resize-none rounded-2xl\"></textarea> <button type=\"submit\" class=\"btn btn-circle btn-primary\" aria-label=\"Send\"><i data-lucide=\"arrow-up\" class=\"size-5\"></i></button></form></footer><script>\n\t\t\t(() => {\n\t\t\t\tconst chat = document.getElementById(\"chat\")\n\t\t\t\tif (chat) chat.scrollTop = chat.scrollHeight\n\t\t\t})()\n\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"textarea textarea-bordered max-h-32 min-h-12 flex-1 resize-none rounded-2xl\"></textarea> <button type=\"submit\" class=\"btn btn-circle btn-primary\" aria-label=\"Send\"><i data-lucide=\"arrow-up\" class=\"size-5\"></i></button></form></footer><script>\n\t\t\t(() => {\n\t\t\t\tconst chat = document.getElementById(\"chat\")\n\t\t\t\tif (chat) chat.scrollTop = chat.scrollHeight\n\t\t\t})()\n\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -104,64 +112,64 @@ func bubble(m Message) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if m.Role == RoleAssistant {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"chat chat-start\"><div class=\"avatar placeholder chat-image\"><div class=\"grid size-8 place-items-center rounded-full bg-primary text-primary-content\"><i data-lucide=\"activity\" class=\"size-4\"></i></div></div><div class=\"chat-bubble bg-base-200 text-base-content\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"chat chat-start\"><div class=\"avatar placeholder chat-image\"><div class=\"grid size-8 place-items-center rounded-full bg-primary text-primary-content\"><i data-lucide=\"activity\" class=\"size-4\"></i></div></div><div class=\"chat-bubble bg-base-200 text-base-content\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(m.Content)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 44, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 45, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"chat-footer mt-1 text-xs text-base-content/40\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div class=\"chat-footer mt-1 text-xs text-base-content/40\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(m.Time)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 45, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 46, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"chat chat-end\"><div class=\"chat-bubble chat-bubble-primary\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"chat chat-end\"><div class=\"chat-bubble chat-bubble-primary\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(m.Content)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 49, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 50, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"chat-footer mt-1 text-xs text-base-content/40\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"chat-footer mt-1 text-xs text-base-content/40\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(m.Time)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 50, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `conversation.templ`, Line: 51, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

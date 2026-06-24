@@ -8,9 +8,104 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
+
+const createPlan = `-- name: CreatePlan :one
+INSERT INTO plans (user_id, status, name, goal_fact_id, start_date, end_date, meta)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, user_id, status, name, goal_fact_id, start_date, end_date, meta, created_at, updated_at
+`
+
+type CreatePlanParams struct {
+	UserID     uuid.UUID             `json:"user_id"`
+	Status     string                `json:"status"`
+	Name       sql.NullString        `json:"name"`
+	GoalFactID uuid.NullUUID         `json:"goal_fact_id"`
+	StartDate  sql.NullTime          `json:"start_date"`
+	EndDate    sql.NullTime          `json:"end_date"`
+	Meta       pqtype.NullRawMessage `json:"meta"`
+}
+
+func (q *Queries) CreatePlan(ctx context.Context, arg CreatePlanParams) (Plan, error) {
+	row := q.db.QueryRowContext(ctx, createPlan,
+		arg.UserID,
+		arg.Status,
+		arg.Name,
+		arg.GoalFactID,
+		arg.StartDate,
+		arg.EndDate,
+		arg.Meta,
+	)
+	var i Plan
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Status,
+		&i.Name,
+		&i.GoalFactID,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Meta,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const decideProposal = `-- name: DecideProposal :exec
+UPDATE plan_change_proposals
+SET status = $2, decided_by = $3, decided_at = now(), applied_diff = $4
+WHERE id = $1 AND user_id = $5
+`
+
+type DecideProposalParams struct {
+	ID          uuid.UUID             `json:"id"`
+	Status      string                `json:"status"`
+	DecidedBy   sql.NullString        `json:"decided_by"`
+	AppliedDiff pqtype.NullRawMessage `json:"applied_diff"`
+	UserID      uuid.UUID             `json:"user_id"`
+}
+
+func (q *Queries) DecideProposal(ctx context.Context, arg DecideProposalParams) error {
+	_, err := q.db.ExecContext(ctx, decideProposal,
+		arg.ID,
+		arg.Status,
+		arg.DecidedBy,
+		arg.AppliedDiff,
+		arg.UserID,
+	)
+	return err
+}
+
+const getActivePlan = `-- name: GetActivePlan :one
+SELECT id, user_id, status, name, goal_fact_id, start_date, end_date, meta, created_at, updated_at FROM plans
+WHERE user_id = $1 AND status = 'active'
+ORDER BY updated_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetActivePlan(ctx context.Context, userID uuid.UUID) (Plan, error) {
+	row := q.db.QueryRowContext(ctx, getActivePlan, userID)
+	var i Plan
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Status,
+		&i.Name,
+		&i.GoalFactID,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Meta,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const getPlannedWorkout = `-- name: GetPlannedWorkout :one
 SELECT id, plan_id, user_id, scheduled_date, workout_type, description, target_distance_m, target_duration_s, structure, completed_activity_id, created_at, garmin_workout_id, garmin_schedule_id FROM planned_workouts WHERE id = $1
@@ -37,6 +132,179 @@ func (q *Queries) GetPlannedWorkout(ctx context.Context, id uuid.UUID) (PlannedW
 	return i, err
 }
 
+const getProposal = `-- name: GetProposal :one
+SELECT id, plan_id, user_id, status, rationale, proposed_diff, applied_diff, decided_by, decided_at, triggering_message_id, created_at FROM plan_change_proposals WHERE id = $1
+`
+
+func (q *Queries) GetProposal(ctx context.Context, id uuid.UUID) (PlanChangeProposal, error) {
+	row := q.db.QueryRowContext(ctx, getProposal, id)
+	var i PlanChangeProposal
+	err := row.Scan(
+		&i.ID,
+		&i.PlanID,
+		&i.UserID,
+		&i.Status,
+		&i.Rationale,
+		&i.ProposedDiff,
+		&i.AppliedDiff,
+		&i.DecidedBy,
+		&i.DecidedAt,
+		&i.TriggeringMessageID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertPlanProposal = `-- name: InsertPlanProposal :one
+INSERT INTO plan_change_proposals (plan_id, user_id, rationale, proposed_diff, triggering_message_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, plan_id, user_id, status, rationale, proposed_diff, applied_diff, decided_by, decided_at, triggering_message_id, created_at
+`
+
+type InsertPlanProposalParams struct {
+	PlanID              uuid.UUID       `json:"plan_id"`
+	UserID              uuid.UUID       `json:"user_id"`
+	Rationale           sql.NullString  `json:"rationale"`
+	ProposedDiff        json.RawMessage `json:"proposed_diff"`
+	TriggeringMessageID uuid.NullUUID   `json:"triggering_message_id"`
+}
+
+func (q *Queries) InsertPlanProposal(ctx context.Context, arg InsertPlanProposalParams) (PlanChangeProposal, error) {
+	row := q.db.QueryRowContext(ctx, insertPlanProposal,
+		arg.PlanID,
+		arg.UserID,
+		arg.Rationale,
+		arg.ProposedDiff,
+		arg.TriggeringMessageID,
+	)
+	var i PlanChangeProposal
+	err := row.Scan(
+		&i.ID,
+		&i.PlanID,
+		&i.UserID,
+		&i.Status,
+		&i.Rationale,
+		&i.ProposedDiff,
+		&i.AppliedDiff,
+		&i.DecidedBy,
+		&i.DecidedAt,
+		&i.TriggeringMessageID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listPlannedWorkoutsInRange = `-- name: ListPlannedWorkoutsInRange :many
+SELECT id, plan_id, user_id, scheduled_date, workout_type, description, target_distance_m, target_duration_s, structure, completed_activity_id, created_at, garmin_workout_id, garmin_schedule_id FROM planned_workouts
+WHERE user_id = $1 AND scheduled_date >= $2 AND scheduled_date <= $3
+ORDER BY scheduled_date
+`
+
+type ListPlannedWorkoutsInRangeParams struct {
+	UserID          uuid.UUID `json:"user_id"`
+	ScheduledDate   time.Time `json:"scheduled_date"`
+	ScheduledDate_2 time.Time `json:"scheduled_date_2"`
+}
+
+func (q *Queries) ListPlannedWorkoutsInRange(ctx context.Context, arg ListPlannedWorkoutsInRangeParams) ([]PlannedWorkout, error) {
+	rows, err := q.db.QueryContext(ctx, listPlannedWorkoutsInRange, arg.UserID, arg.ScheduledDate, arg.ScheduledDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PlannedWorkout
+	for rows.Next() {
+		var i PlannedWorkout
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlanID,
+			&i.UserID,
+			&i.ScheduledDate,
+			&i.WorkoutType,
+			&i.Description,
+			&i.TargetDistanceM,
+			&i.TargetDurationS,
+			&i.Structure,
+			&i.CompletedActivityID,
+			&i.CreatedAt,
+			&i.GarminWorkoutID,
+			&i.GarminScheduleID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProposalsByStatus = `-- name: ListProposalsByStatus :many
+SELECT id, plan_id, user_id, status, rationale, proposed_diff, applied_diff, decided_by, decided_at, triggering_message_id, created_at FROM plan_change_proposals
+WHERE user_id = $1 AND status = $2
+ORDER BY created_at DESC
+`
+
+type ListProposalsByStatusParams struct {
+	UserID uuid.UUID `json:"user_id"`
+	Status string    `json:"status"`
+}
+
+func (q *Queries) ListProposalsByStatus(ctx context.Context, arg ListProposalsByStatusParams) ([]PlanChangeProposal, error) {
+	rows, err := q.db.QueryContext(ctx, listProposalsByStatus, arg.UserID, arg.Status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PlanChangeProposal
+	for rows.Next() {
+		var i PlanChangeProposal
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlanID,
+			&i.UserID,
+			&i.Status,
+			&i.Rationale,
+			&i.ProposedDiff,
+			&i.AppliedDiff,
+			&i.DecidedBy,
+			&i.DecidedAt,
+			&i.TriggeringMessageID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setPlanStatus = `-- name: SetPlanStatus :exec
+UPDATE plans SET status = $2, updated_at = now()
+WHERE id = $1 AND user_id = $3
+`
+
+type SetPlanStatusParams struct {
+	ID     uuid.UUID `json:"id"`
+	Status string    `json:"status"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) SetPlanStatus(ctx context.Context, arg SetPlanStatusParams) error {
+	_, err := q.db.ExecContext(ctx, setPlanStatus, arg.ID, arg.Status, arg.UserID)
+	return err
+}
+
 const setPlannedWorkoutGarmin = `-- name: SetPlannedWorkoutGarmin :exec
 UPDATE planned_workouts
 SET garmin_workout_id = $2, garmin_schedule_id = $3
@@ -52,4 +320,85 @@ type SetPlannedWorkoutGarminParams struct {
 func (q *Queries) SetPlannedWorkoutGarmin(ctx context.Context, arg SetPlannedWorkoutGarminParams) error {
 	_, err := q.db.ExecContext(ctx, setPlannedWorkoutGarmin, arg.ID, arg.GarminWorkoutID, arg.GarminScheduleID)
 	return err
+}
+
+const updatePlan = `-- name: UpdatePlan :exec
+UPDATE plans SET name = $2, start_date = $3, end_date = $4, meta = $5, updated_at = now()
+WHERE id = $1 AND user_id = $6
+`
+
+type UpdatePlanParams struct {
+	ID        uuid.UUID             `json:"id"`
+	Name      sql.NullString        `json:"name"`
+	StartDate sql.NullTime          `json:"start_date"`
+	EndDate   sql.NullTime          `json:"end_date"`
+	Meta      pqtype.NullRawMessage `json:"meta"`
+	UserID    uuid.UUID             `json:"user_id"`
+}
+
+func (q *Queries) UpdatePlan(ctx context.Context, arg UpdatePlanParams) error {
+	_, err := q.db.ExecContext(ctx, updatePlan,
+		arg.ID,
+		arg.Name,
+		arg.StartDate,
+		arg.EndDate,
+		arg.Meta,
+		arg.UserID,
+	)
+	return err
+}
+
+const upsertPlannedWorkout = `-- name: UpsertPlannedWorkout :one
+INSERT INTO planned_workouts (plan_id, user_id, scheduled_date, workout_type, description, target_distance_m, target_duration_s, structure)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (plan_id, scheduled_date) DO UPDATE
+SET workout_type = EXCLUDED.workout_type,
+    description = EXCLUDED.description,
+    target_distance_m = EXCLUDED.target_distance_m,
+    target_duration_s = EXCLUDED.target_duration_s,
+    structure = EXCLUDED.structure,
+    garmin_workout_id = NULL,
+    garmin_schedule_id = NULL
+RETURNING id, plan_id, user_id, scheduled_date, workout_type, description, target_distance_m, target_duration_s, structure, completed_activity_id, created_at, garmin_workout_id, garmin_schedule_id
+`
+
+type UpsertPlannedWorkoutParams struct {
+	PlanID          uuid.UUID             `json:"plan_id"`
+	UserID          uuid.UUID             `json:"user_id"`
+	ScheduledDate   time.Time             `json:"scheduled_date"`
+	WorkoutType     sql.NullString        `json:"workout_type"`
+	Description     sql.NullString        `json:"description"`
+	TargetDistanceM sql.NullString        `json:"target_distance_m"`
+	TargetDurationS sql.NullInt32         `json:"target_duration_s"`
+	Structure       pqtype.NullRawMessage `json:"structure"`
+}
+
+func (q *Queries) UpsertPlannedWorkout(ctx context.Context, arg UpsertPlannedWorkoutParams) (PlannedWorkout, error) {
+	row := q.db.QueryRowContext(ctx, upsertPlannedWorkout,
+		arg.PlanID,
+		arg.UserID,
+		arg.ScheduledDate,
+		arg.WorkoutType,
+		arg.Description,
+		arg.TargetDistanceM,
+		arg.TargetDurationS,
+		arg.Structure,
+	)
+	var i PlannedWorkout
+	err := row.Scan(
+		&i.ID,
+		&i.PlanID,
+		&i.UserID,
+		&i.ScheduledDate,
+		&i.WorkoutType,
+		&i.Description,
+		&i.TargetDistanceM,
+		&i.TargetDurationS,
+		&i.Structure,
+		&i.CompletedActivityID,
+		&i.CreatedAt,
+		&i.GarminWorkoutID,
+		&i.GarminScheduleID,
+	)
+	return i, err
 }
