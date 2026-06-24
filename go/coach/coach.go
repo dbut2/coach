@@ -82,9 +82,10 @@ type Config struct {
 type Coach struct {
 	runner          *runner.Runner
 	defaultLocation *time.Location
+	src             MetricsSource
 }
 
-func New(ctx context.Context, cfg Config) (*Coach, error) {
+func New(ctx context.Context, cfg Config, src MetricsSource) (*Coach, error) {
 	if cfg.APIKey == "" {
 		return nil, errors.New("coach: API key is required")
 	}
@@ -170,7 +171,16 @@ func (c *Coach) tools() ([]tool.Tool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("coach: init tools: %w", err)
 	}
-	return []tool.Tool{today}, nil
+
+	tools := []tool.Tool{today}
+	if c.src != nil {
+		mt, err := c.metricsTools()
+		if err != nil {
+			return nil, err
+		}
+		tools = append(tools, mt...)
+	}
+	return tools, nil
 }
 
 func (c *Coach) athleteLocation(tc agent.ToolContext) *time.Location {
