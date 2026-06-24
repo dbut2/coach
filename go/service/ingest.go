@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -10,6 +12,8 @@ import (
 	"naomi.run/database"
 	"naomi.run/strava"
 )
+
+const activityBackfillWindow = 18 * 7 * 24 * time.Hour
 
 func (s *Service) stravaClient(ctx context.Context, conn database.StravaConnection) *strava.Client {
 	tok := &oauth2.Token{
@@ -89,6 +93,45 @@ func (s *Service) ingestActivity(ctx context.Context, conn database.StravaConnec
 		Lat:         floats(streams.Lat),
 		Lng:         floats(streams.Lng),
 	})
+}
+
+func (s *Service) backfillActivities(ctx context.Context, conn database.StravaConnection, since time.Time) (int, error) {
+	client := s.stravaClient(ctx, conn)
+
+	acts, err := client.Activities(ctx, since, time.Now())
+	if err != nil {
+		return 0, err
+	}
+
+	var n int
+	for _, a := range acts {
+		if err := ctx.Err(); err != nil {
+			return n, err
+		}
+		if err := s.ingestActivity(ctx, conn, a.ID); err != nil {
+			slog.Error("backfill: ingest", "activity_id", a.ID, "err", err)
+			continue
+		}
+		n++
+	}
+	return n, nil
+}
+
+func (s *Service) startBackfill(userID uuid.UUID) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	conn, err := s.q.GetStravaConnectionByUserID(ctx, userID)
+	if err != nil {
+		slog.Error("backfill: load connection", "user_id", userID, "err", err)
+		return
+	}
+	n, err := s.backfillActivities(ctx, conn, time.Now().Add(-activityBackfillWindow))
+	if err != nil {
+		slog.Error("backfill", "user_id", userID, "ingested", n, "err", err)
+		return
+	}
+	slog.Info("backfill complete", "user_id", userID, "ingested", n)
 }
 
 func (s *Service) upsertActivity(ctx context.Context, userID uuid.UUID, act strava.Activity) (uuid.UUID, error) {

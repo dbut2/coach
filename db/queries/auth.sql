@@ -1,6 +1,9 @@
 -- name: GetStravaConnectionByAthleteID :one
 SELECT * FROM strava_connections WHERE athlete_id = $1;
 
+-- name: GetStravaConnectionByUserID :one
+SELECT * FROM strava_connections WHERE user_id = $1;
+
 -- name: CreateUser :one
 INSERT INTO users (display_name) VALUES ($1) RETURNING *;
 

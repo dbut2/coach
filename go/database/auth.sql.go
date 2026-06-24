@@ -140,6 +140,26 @@ func (q *Queries) GetStravaConnectionByAthleteID(ctx context.Context, athleteID 
 	return i, err
 }
 
+const getStravaConnectionByUserID = `-- name: GetStravaConnectionByUserID :one
+SELECT user_id, athlete_id, access_token, refresh_token, expires_at, scope, created_at, updated_at FROM strava_connections WHERE user_id = $1
+`
+
+func (q *Queries) GetStravaConnectionByUserID(ctx context.Context, userID uuid.UUID) (StravaConnection, error) {
+	row := q.db.QueryRowContext(ctx, getStravaConnectionByUserID, userID)
+	var i StravaConnection
+	err := row.Scan(
+		&i.UserID,
+		&i.AthleteID,
+		&i.AccessToken,
+		&i.RefreshToken,
+		&i.ExpiresAt,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateStravaTokens = `-- name: UpdateStravaTokens :exec
 UPDATE strava_connections
 SET access_token = $2, refresh_token = $3, expires_at = $4, scope = $5, updated_at = now()

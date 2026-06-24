@@ -60,6 +60,33 @@ func (c *Client) Activity(ctx context.Context, id int64) (*Activity, error) {
 	return &a, nil
 }
 
+func (c *Client) Activities(ctx context.Context, after, before time.Time) ([]Activity, error) {
+	const perPage = int64(100)
+	a, b, pp := after.Unix(), before.Unix(), perPage
+
+	var out []Activity
+	for page := int64(1); ; page++ {
+		pg := page
+		p := activities.NewGetLoggedInAthleteActivitiesParams()
+		p.After, p.Before, p.Page, p.PerPage = &a, &b, &pg, &pp
+
+		resp, err := c.api.Activities.GetLoggedInAthleteActivitiesContext(ctx, p, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, sa := range resp.Payload {
+			act, err := toActivity(sa.ID, sa.StartDate, string(sa.SportType), sa)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, act)
+		}
+		if int64(len(resp.Payload)) < perPage {
+			return out, nil
+		}
+	}
+}
+
 func toActivity(id int64, start strfmt.DateTime, sport string, payload any) (Activity, error) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
