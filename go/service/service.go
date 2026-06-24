@@ -17,8 +17,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
+	"naomi.run/clients/garmin"
 	"naomi.run/database"
-	"naomi.run/garmin"
 	"naomi.run/strava"
 )
 

@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"naomi.run/clients/garmin"
 	"naomi.run/database"
-	"naomi.run/garmin"
 )
 
 var errNotOwner = errors.New("planned workout not owned by user")
