@@ -33,16 +33,17 @@ var pages = []page{
 }
 
 var sampleConversation = []web.Message{
-	{Role: web.RoleAssistant, Content: "Morning! I saw your 8 km easy run synced overnight — nicely controlled, your pace stayed in zone 2 the whole way. How did the legs feel?", Time: "7:02 AM"},
+	{Role: web.RoleAssistant, Content: "Morning! I saw your 8 km easy run synced overnight — nicely controlled, your pace stayed in zone 2 the whole way. Your Garmin also logged 7h 40m sleep and HRV back up to 68 ms, so recovery's looking solid. How did the legs feel?", Time: "7:02 AM"},
 	{Role: web.RoleUser, Content: "Pretty good, a bit heavy at the start but loosened up after a couple of km.", Time: "7:14 AM"},
 	{Role: web.RoleAssistant, Content: "That's normal the day after a long run. Your acute:chronic load is sitting at 1.1, right in the sweet spot — no need to back off. Want me to slot an easy day or some strides for tomorrow?", Time: "7:15 AM"},
 	{Role: web.RoleUser, Content: "Strides sound good. I've got a 10k race in 6 weeks I want to target.", Time: "7:20 AM"},
-	{Role: web.RoleAssistant, Content: "Noted — I've recorded that 10k goal. Six weeks is enough to sharpen. I'll start shaping a plan and run it past you before anything changes.", Time: "7:21 AM"},
+	{Role: web.RoleAssistant, Content: "Noted — I've recorded that 10k goal. Six weeks is enough to sharpen. I've pushed tomorrow's session — 6 km easy with 6×20s strides — to your Garmin so it's ready on the watch. I'll shape the full plan and run it past you before anything else changes.", Time: "7:21 AM"},
 }
 
 var sampleSettings = web.SettingsData{
 	DisplayName:     "Dylan",
 	StravaConnected: true,
+	GarminConnected: true,
 }
 
 func main() {
