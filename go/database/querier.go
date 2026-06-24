@@ -23,6 +23,7 @@ type Querier interface {
 	GetPlannedWorkout(ctx context.Context, id uuid.UUID) (PlannedWorkout, error)
 	GetSessionUser(ctx context.Context, id string) (GetSessionUserRow, error)
 	GetStravaConnectionByAthleteID(ctx context.Context, athleteID int64) (StravaConnection, error)
+	GetStravaConnectionByUserID(ctx context.Context, userID uuid.UUID) (StravaConnection, error)
 	InsertMessage(ctx context.Context, arg InsertMessageParams) (Message, error)
 	InsertRunnerFact(ctx context.Context, arg InsertRunnerFactParams) (RunnerFact, error)
 	ListActiveRunnerFacts(ctx context.Context, userID uuid.UUID) ([]RunnerFact, error)

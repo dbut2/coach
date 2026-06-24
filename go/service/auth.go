@@ -82,7 +82,7 @@ func (s *Service) stravaCallback(c *gin.Context) {
 		return
 	}
 
-	userID, err := s.upsertAthlete(c, tok, athlete)
+	userID, created, err := s.upsertAthlete(c, tok, athlete)
 	if err != nil {
 		render(c, http.StatusInternalServerError, web.ErrorPage(s.cfg.CoachName, "We couldn't save your connection. Please try again."))
 		return
@@ -93,16 +93,20 @@ func (s *Service) stravaCallback(c *gin.Context) {
 		return
 	}
 
+	if created {
+		go s.startBackfill(userID)
+	}
+
 	c.Redirect(http.StatusFound, "/conversation")
 }
 
-func (s *Service) upsertAthlete(c *gin.Context, tok *oauth2.Token, athlete strava.Athlete) (uuid.UUID, error) {
+func (s *Service) upsertAthlete(c *gin.Context, tok *oauth2.Token, athlete strava.Athlete) (uuid.UUID, bool, error) {
 	ctx := c.Request.Context()
 
 	conn, err := s.q.GetStravaConnectionByAthleteID(ctx, athlete.ID)
 	switch {
 	case err == nil:
-		return conn.UserID, s.q.UpdateStravaTokens(ctx, database.UpdateStravaTokensParams{
+		return conn.UserID, false, s.q.UpdateStravaTokens(ctx, database.UpdateStravaTokensParams{
 			UserID:       conn.UserID,
 			AccessToken:  tok.AccessToken,
 			RefreshToken: tok.RefreshToken,
@@ -112,7 +116,7 @@ func (s *Service) upsertAthlete(c *gin.Context, tok *oauth2.Token, athlete strav
 	case errors.Is(err, sql.ErrNoRows):
 		user, err := s.q.CreateUser(ctx, sql.NullString{String: athlete.FirstName, Valid: athlete.FirstName != ""})
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, false, err
 		}
 		_, err = s.q.CreateStravaConnection(ctx, database.CreateStravaConnectionParams{
 			UserID:       user.ID,
@@ -122,9 +126,9 @@ func (s *Service) upsertAthlete(c *gin.Context, tok *oauth2.Token, athlete strav
 			ExpiresAt:    tok.Expiry,
 			Scope:        strava.Scope,
 		})
-		return user.ID, err
+		return user.ID, err == nil, err
 	default:
-		return uuid.Nil, err
+		return uuid.Nil, false, err
 	}
 }
 
