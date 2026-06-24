@@ -17,12 +17,14 @@ const maxTokens = 8192
 type claudeLLM struct {
 	client anthropic.Client
 	model  anthropic.Model
+	tel    *telemetry
 }
 
-func newClaudeModel(apiKey, modelName string) model.LLM {
+func newClaudeModel(apiKey, modelName string, tel *telemetry) model.LLM {
 	return &claudeLLM{
 		client: anthropic.NewClient(option.WithAPIKey(apiKey)),
 		model:  anthropic.Model(modelName),
+		tel:    tel,
 	}
 }
 
@@ -49,6 +51,7 @@ func (m *claudeLLM) GenerateContent(ctx context.Context, req *model.LLMRequest, 
 				yield(nil, err)
 				return
 			}
+			m.tel.recordModel(ctx, string(acc.Model), acc.Usage)
 			yield(toLLMResponse(&acc), nil)
 			return
 		}
@@ -58,6 +61,7 @@ func (m *claudeLLM) GenerateContent(ctx context.Context, req *model.LLMRequest, 
 			yield(nil, err)
 			return
 		}
+		m.tel.recordModel(ctx, string(msg.Model), msg.Usage)
 		yield(toLLMResponse(msg), nil)
 	}
 }

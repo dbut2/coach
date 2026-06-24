@@ -12,6 +12,7 @@ import (
 
 	"naomi.run/config"
 	"naomi.run/service"
+	"naomi.run/telemetry"
 )
 
 func main() {
@@ -27,6 +28,12 @@ func run() error {
 	}
 
 	ctx := context.Background()
+
+	shutdownTelemetry, err := telemetry.Setup(ctx, cfg.Telemetry)
+	if err != nil {
+		return fmt.Errorf("telemetry: %w", err)
+	}
+	defer func() { _ = shutdownTelemetry(context.Background()) }()
 
 	db, err := sql.Open("pgx", cfg.DatabaseDSN)
 	if err != nil {
