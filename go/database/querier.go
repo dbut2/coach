@@ -12,34 +12,44 @@ import (
 )
 
 type Querier interface {
+	CreatePlan(ctx context.Context, arg CreatePlanParams) (Plan, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateStravaConnection(ctx context.Context, arg CreateStravaConnectionParams) (StravaConnection, error)
 	CreateUser(ctx context.Context, displayName sql.NullString) (User, error)
+	DecideProposal(ctx context.Context, arg DecideProposalParams) error
 	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
 	DeleteGarminConnection(ctx context.Context, userID uuid.UUID) error
 	DeleteSession(ctx context.Context, id string) error
+	GetActivePlan(ctx context.Context, userID uuid.UUID) (Plan, error)
 	GetActivityStream(ctx context.Context, activityID uuid.UUID) (ActivityStream, error)
 	GetGarminConnection(ctx context.Context, userID uuid.UUID) (GarminConnection, error)
 	GetPlannedWorkout(ctx context.Context, id uuid.UUID) (PlannedWorkout, error)
+	GetProposal(ctx context.Context, id uuid.UUID) (PlanChangeProposal, error)
 	GetSessionUser(ctx context.Context, id string) (GetSessionUserRow, error)
 	GetStravaConnectionByAthleteID(ctx context.Context, athleteID int64) (StravaConnection, error)
 	GetStravaConnectionByUserID(ctx context.Context, userID uuid.UUID) (StravaConnection, error)
 	InsertMessage(ctx context.Context, arg InsertMessageParams) (Message, error)
+	InsertPlanProposal(ctx context.Context, arg InsertPlanProposalParams) (PlanChangeProposal, error)
 	InsertRunnerFact(ctx context.Context, arg InsertRunnerFactParams) (RunnerFact, error)
 	ListActiveRunnerFacts(ctx context.Context, userID uuid.UUID) ([]RunnerFact, error)
 	ListActivitiesByUser(ctx context.Context, arg ListActivitiesByUserParams) ([]Activity, error)
 	ListActivityStreamsByUser(ctx context.Context, arg ListActivityStreamsByUserParams) ([]ActivityStream, error)
 	ListGarminConnections(ctx context.Context) ([]GarminConnection, error)
+	ListPlannedWorkoutsInRange(ctx context.Context, arg ListPlannedWorkoutsInRangeParams) ([]PlannedWorkout, error)
+	ListProposalsByStatus(ctx context.Context, arg ListProposalsByStatusParams) ([]PlanChangeProposal, error)
 	ListRecentMessages(ctx context.Context, arg ListRecentMessagesParams) ([]Message, error)
 	ListWellnessByUser(ctx context.Context, arg ListWellnessByUserParams) ([]WellnessMetric, error)
 	Null(ctx context.Context) (int32, error)
+	SetPlanStatus(ctx context.Context, arg SetPlanStatusParams) error
 	SetPlannedWorkoutGarmin(ctx context.Context, arg SetPlannedWorkoutGarminParams) error
 	UpdateGarminLastSync(ctx context.Context, arg UpdateGarminLastSyncParams) error
+	UpdatePlan(ctx context.Context, arg UpdatePlanParams) error
 	UpdateRunnerFactStatus(ctx context.Context, arg UpdateRunnerFactStatusParams) error
 	UpdateStravaTokens(ctx context.Context, arg UpdateStravaTokensParams) error
 	UpsertActivity(ctx context.Context, arg UpsertActivityParams) (uuid.UUID, error)
 	UpsertActivityStream(ctx context.Context, arg UpsertActivityStreamParams) error
 	UpsertGarminConnection(ctx context.Context, arg UpsertGarminConnectionParams) (GarminConnection, error)
+	UpsertPlannedWorkout(ctx context.Context, arg UpsertPlannedWorkoutParams) (PlannedWorkout, error)
 	UpsertWellnessMetric(ctx context.Context, arg UpsertWellnessMetricParams) error
 }
 

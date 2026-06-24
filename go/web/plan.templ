@@ -1,0 +1,70 @@
+package web
+
+import "fmt"
+
+templ Proposals(coachName string, items []Proposal) {
+	@Base("Plan changes") {
+		@appBar("Plan changes", true)
+		<main class="flex-1 space-y-3 overflow-y-auto px-4 py-5">
+			if len(items) == 0 {
+				<div class="grid flex-1 place-items-center py-16 text-center">
+					<div class="space-y-1">
+						<i data-lucide="check-check" class="mx-auto size-8 text-base-content/30"></i>
+						<p class="text-sm text-base-content/60">Nothing waiting on you.</p>
+						<p class="text-xs text-base-content/40">{ coachName }'s plan changes show up here to approve.</p>
+					</div>
+				</div>
+			} else {
+				for _, p := range items {
+					@proposalCard(p)
+				}
+			}
+		</main>
+	}
+}
+
+templ proposalCard(p Proposal) {
+	<div class="card border border-base-200 bg-base-100">
+		<div class="card-body gap-2 p-4">
+			<div class="flex items-center justify-between">
+				<div class="text-sm font-medium">{ p.Weekday } { p.Date }</div>
+				if p.DistanceKm > 0 {
+					<span class="text-xs text-base-content/60">{ fmtKm(p.DistanceKm) }</span>
+				}
+			</div>
+			<div class="text-sm">{ p.Workout }</div>
+			if p.Detail != "" {
+				<div class="text-xs text-base-content/60">{ p.Detail }</div>
+			}
+			<div class="mt-1 flex gap-2 self-end">
+				<form method="post" action={ templ.SafeURL("/plan/proposals/" + p.ID + "/reject") }>
+					<button type="submit" class="btn btn-ghost btn-sm text-error">Reject</button>
+				</form>
+				<form method="post" action={ templ.SafeURL("/plan/proposals/" + p.ID + "/approve") }>
+					<button type="submit" class="btn btn-primary btn-sm">Approve</button>
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
+templ PendingBanner(count int) {
+	if count > 0 {
+		<a href="/plan/proposals" class="mx-3 mt-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+			<i data-lucide="calendar-clock" class="size-4 text-primary"></i>
+			<span class="flex-1">{ fmtPending(count) }</span>
+			<i data-lucide="chevron-right" class="size-4 text-base-content/40"></i>
+		</a>
+	}
+}
+
+func fmtKm(km float64) string {
+	return fmt.Sprintf("%gkm", km)
+}
+
+func fmtPending(count int) string {
+	if count == 1 {
+		return "1 plan change to approve"
+	}
+	return fmt.Sprintf("%d plan changes to approve", count)
+}
