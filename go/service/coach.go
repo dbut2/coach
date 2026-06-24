@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -13,10 +14,14 @@ import (
 
 	"naomi.run/coach"
 	"naomi.run/database"
+	"naomi.run/web"
 )
 
 type coachStore struct {
-	q *database.Queries
+	q         *database.Queries
+	hub       *hub
+	loc       *time.Location
+	coachName string
 }
 
 func (s coachStore) AppendMessage(ctx context.Context, userID uuid.UUID, role, content string) (uuid.UUID, error) {
@@ -24,15 +29,43 @@ func (s coachStore) AppendMessage(ctx context.Context, userID uuid.UUID, role, c
 	if err != nil {
 		return uuid.UUID{}, err
 	}
+	if role == coach.RoleCoach && s.hub != nil {
+		s.hub.broadcast(userID.String(), "message", renderHTML(web.Fragment(web.Message{
+			Role:    web.RoleAssistant,
+			Content: content,
+			Time:    m.CreatedAt.In(s.loc).Format("3:04 PM"),
+		})))
+	}
 	return m.ID, nil
 }
 
 func (s coachStore) AppendToolCall(ctx context.Context, userID uuid.UUID, name string, payload json.RawMessage) error {
-	return s.q.InsertToolMessage(ctx, database.InsertToolMessageParams{
+	if err := s.q.InsertToolMessage(ctx, database.InsertToolMessageParams{
 		UserID:      userID,
 		ToolName:    sql.NullString{String: name, Valid: name != ""},
 		ToolPayload: pqtype.NullRawMessage{RawMessage: payload, Valid: len(payload) > 0},
-	})
+	}); err != nil {
+		return err
+	}
+	if s.hub != nil {
+		s.hub.broadcast(userID.String(), "tool", renderHTML(web.Fragment(web.Message{
+			Role:    web.RoleTool,
+			Tool:    name,
+			Content: compactJSON(payload),
+		})))
+	}
+	return nil
+}
+
+func compactJSON(p json.RawMessage) string {
+	if len(p) == 0 {
+		return ""
+	}
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, p); err != nil {
+		return string(p)
+	}
+	return buf.String()
 }
 
 func (s coachStore) RecentMessages(ctx context.Context, userID uuid.UUID, limit int) ([]coach.Turn, error) {

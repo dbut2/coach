@@ -56,6 +56,7 @@ type Service struct {
 	garmin *garmin.Client
 	coach  *coach.Coach
 	loc    *time.Location
+	hub    *hub
 	e      *gin.Engine
 
 	gmu      sync.Mutex
@@ -70,7 +71,8 @@ func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
 	}
 	q := database.New(db)
 
-	cch, err := coach.New(ctx, cfg.Coach, source.New(q), coachStore{q: q})
+	h := newHub()
+	cch, err := coach.New(ctx, cfg.Coach, source.New(q), coachStore{q: q, hub: h, loc: loc, coachName: cfg.CoachName})
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +85,7 @@ func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
 		garmin:   garmin.New(cfg.GarminConsumerKey, cfg.GarminConsumerSecret),
 		coach:    cch,
 		loc:      loc,
+		hub:      h,
 		e:        gin.Default(),
 		gtok:     map[uuid.UUID]*garmin.OAuth2Token{},
 		gpending: map[uuid.UUID]*garmin.LoginFlow{},
@@ -107,6 +110,7 @@ func (s *Service) addRoutes() {
 
 	authed := s.e.Group("/", s.requireAuth)
 	authed.GET("/conversation", s.conversation)
+	authed.GET("/conversation/events", s.conversationEvents)
 	authed.POST("/conversation", s.sendMessage)
 	authed.GET("/settings", s.settings)
 	authed.POST("/auth/garmin/connect", s.connectGarmin)
