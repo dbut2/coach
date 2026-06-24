@@ -18,7 +18,9 @@ import (
 	"golang.org/x/oauth2"
 
 	"naomi.run/clients/garmin"
+	"naomi.run/coach"
 	"naomi.run/database"
+	"naomi.run/metrics/source"
 	"naomi.run/strava"
 )
 
@@ -33,6 +35,8 @@ type Config struct {
 	GarminConsumerKey    string  `env:"GARMIN_CONSUMER_KEY"`
 	GarminConsumerSecret string  `env:"GARMIN_CONSUMER_SECRET"`
 	DefaultTimezone      string  `env:"DEFAULT_TIMEZONE" envDefault:"Australia/Melbourne"`
+
+	Coach coach.Config
 }
 
 func (c Config) athleteAllowed(id int64) bool {
@@ -50,6 +54,7 @@ type Service struct {
 	q      *database.Queries
 	oauth  *oauth2.Config
 	garmin *garmin.Client
+	coach  *coach.Coach
 	loc    *time.Location
 	e      *gin.Engine
 
@@ -58,17 +63,25 @@ type Service struct {
 	gpending map[uuid.UUID]*garmin.LoginFlow
 }
 
-func New(db *sql.DB, cfg Config) *Service {
+func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
 	loc, err := time.LoadLocation(cfg.DefaultTimezone)
 	if err != nil {
 		loc = time.UTC
 	}
+	q := database.New(db)
+
+	cch, err := coach.New(ctx, cfg.Coach, source.New(q), coachStore{q: q})
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Service{
 		cfg:      cfg,
 		db:       db,
-		q:        database.New(db),
+		q:        q,
 		oauth:    strava.Config(cfg.StravaClientID, cfg.StravaClientSecret, "https://strava.dbut.dev/naomi"), // todo: configure redirect
 		garmin:   garmin.New(cfg.GarminConsumerKey, cfg.GarminConsumerSecret),
+		coach:    cch,
 		loc:      loc,
 		e:        gin.Default(),
 		gtok:     map[uuid.UUID]*garmin.OAuth2Token{},
@@ -78,7 +91,7 @@ func New(db *sql.DB, cfg Config) *Service {
 
 	s.addRoutes()
 
-	return s
+	return s, nil
 }
 
 func (s *Service) addRoutes() {
@@ -94,6 +107,7 @@ func (s *Service) addRoutes() {
 
 	authed := s.e.Group("/", s.requireAuth)
 	authed.GET("/conversation", s.conversation)
+	authed.POST("/conversation", s.sendMessage)
 	authed.GET("/settings", s.settings)
 	authed.POST("/auth/garmin/connect", s.connectGarmin)
 	authed.POST("/auth/garmin/mfa", s.garminMFA)
