@@ -129,14 +129,14 @@ func (s *Service) conversationEvents(c *gin.Context) {
 		case <-c.Request.Context().Done():
 			return
 		case <-keepalive.C:
-			fmt.Fprint(c.Writer, ": ping\n\n")
+			_, _ = fmt.Fprint(c.Writer, ": ping\n\n")
 			c.Writer.Flush()
 		case ev := <-ch:
-			fmt.Fprintf(c.Writer, "event: %s\n", ev.name)
+			_, _ = fmt.Fprintf(c.Writer, "event: %s\n", ev.name)
 			for _, line := range strings.Split(ev.html, "\n") {
-				fmt.Fprintf(c.Writer, "data: %s\n", line)
+				_, _ = fmt.Fprintf(c.Writer, "data: %s\n", line)
 			}
-			fmt.Fprint(c.Writer, "\n")
+			_, _ = fmt.Fprint(c.Writer, "\n")
 			c.Writer.Flush()
 		}
 	}
