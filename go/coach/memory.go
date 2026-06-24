@@ -16,6 +16,7 @@ import (
 const (
 	RoleRunner = "runner"
 	RoleCoach  = "coach"
+	RoleTool   = "tool"
 
 	statusActive = "active"
 )
@@ -39,6 +40,7 @@ type Fact struct {
 
 type Store interface {
 	AppendMessage(ctx context.Context, userID uuid.UUID, role, content string) (uuid.UUID, error)
+	AppendToolCall(ctx context.Context, userID uuid.UUID, name string, payload json.RawMessage) error
 	RecentMessages(ctx context.Context, userID uuid.UUID, limit int) ([]Turn, error)
 	RecordFact(ctx context.Context, userID uuid.UUID, f Fact) error
 	ActiveFacts(ctx context.Context, userID uuid.UUID) ([]Fact, error)

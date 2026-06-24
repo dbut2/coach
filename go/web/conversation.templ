@@ -1,15 +1,19 @@
 package web
 
-templ Conversation(coachName string, messages []Message, pending int) {
+templ Conversation(coachName string, messages []Message, pending int, debug bool) {
 	@Base(coachName) {
-		@appBar(coachName, false)
+		@conversationBar(coachName, debug)
 		@PendingBanner(pending)
 		<main id="chat" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
 			<div class="my-2 flex justify-center">
 				<span class="rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/60">Today</span>
 			</div>
 			for _, m := range messages {
-				@bubble(m)
+				if m.Role == RoleTool {
+					@toolTrace(m)
+				} else {
+					@bubble(m)
+				}
 			}
 		</main>
 		<footer class="border-t border-base-200 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -32,6 +36,53 @@ templ Conversation(coachName string, messages []Message, pending int) {
 			})()
 		</script>
 	}
+}
+
+templ conversationBar(coachName string, debug bool) {
+	<header class="navbar min-h-14 border-b border-base-200 bg-base-100/90 px-3 backdrop-blur">
+		<div class="flex flex-1 items-center gap-2">
+			<div class="leading-tight">
+				<div class="text-sm font-semibold">{ coachName }</div>
+			</div>
+		</div>
+		<a
+			href={ templ.SafeURL(debugToggleHref(debug)) }
+			class={ "btn btn-ghost btn-circle btn-sm", templ.KV("text-warning", debug) }
+			aria-label="Toggle debug"
+			aria-pressed={ boolAttr(debug) }
+		>
+			<i data-lucide="bug" class="size-5"></i>
+		</a>
+		<a href="/settings" class="btn btn-ghost btn-circle btn-sm" aria-label="Settings">
+			<i data-lucide="settings" class="size-5"></i>
+		</a>
+	</header>
+}
+
+func debugToggleHref(debug bool) string {
+	if debug {
+		return "/conversation?debug=0"
+	}
+	return "/conversation?debug=1"
+}
+
+func boolAttr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+templ toolTrace(m Message) {
+	<div class="my-1 flex justify-center">
+		<div class="flex max-w-[90%] items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/5 px-2.5 py-1 font-mono text-xs text-base-content/50">
+			<i data-lucide="wrench" class="size-3 shrink-0 text-warning/70"></i>
+			<span class="font-semibold text-base-content/70">{ m.Tool }</span>
+			if m.Content != "" {
+				<span class="truncate">{ m.Content }</span>
+			}
+		</div>
+	</div>
 }
 
 templ bubble(m Message) {
