@@ -15,7 +15,6 @@ import (
 	"google.golang.org/adk/runner"
 	"google.golang.org/adk/session"
 	"google.golang.org/adk/tool"
-	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/genai"
 )
 
@@ -23,14 +22,6 @@ const (
 	appName       = "coach"
 	stateTimezone = "timezone"
 )
-
-func locationOr(name string, fallback *time.Location) *time.Location {
-	loc, err := time.LoadLocation(name)
-	if err != nil {
-		return fallback
-	}
-	return loc
-}
 
 const persona = `You are Naomi, a running coach. You combine deep expertise in exercise physiology and training theory with the warmth of a coach who genuinely wants to see people succeed. People should feel they can tell you anything — a missed week, a nagging injury they've been hiding, a fear they're "not a real runner" — and get a straight, supportive answer with zero judgment.
 
@@ -155,44 +146,11 @@ func (c *Coach) Reply(ctx context.Context, userID, sessionID string, tz *time.Lo
 	return strings.TrimSpace(b.String()), nil
 }
 
-type todayResult struct {
-	Date    string `json:"date"`
-	Weekday string `json:"weekday"`
-}
-
 func (c *Coach) tools() ([]tool.Tool, error) {
-	today, err := functiontool.New(functiontool.Config{
-		Name:        "today",
-		Description: "Returns the current date in the athlete's timezone.",
-	}, func(tc agent.ToolContext, _ struct{}) (todayResult, error) {
-		now := time.Now().In(c.athleteLocation(tc))
-		return todayResult{Date: now.Format("2006-01-02"), Weekday: now.Weekday().String()}, nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("coach: init tools: %w", err)
+	if c.src == nil {
+		return nil, nil
 	}
-
-	tools := []tool.Tool{today}
-	if c.src != nil {
-		mt, err := c.metricsTools()
-		if err != nil {
-			return nil, err
-		}
-		tools = append(tools, mt...)
-	}
-	return tools, nil
-}
-
-func (c *Coach) athleteLocation(tc agent.ToolContext) *time.Location {
-	v, err := tc.State().Get(stateTimezone)
-	if err != nil {
-		return c.defaultLocation
-	}
-	name, ok := v.(string)
-	if !ok {
-		return c.defaultLocation
-	}
-	return locationOr(name, c.defaultLocation)
+	return c.metricsTools()
 }
 
 func logUsage(_ agent.CallbackContext, resp *model.LLMResponse, respErr error) (*model.LLMResponse, error) {
