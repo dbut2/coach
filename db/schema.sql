@@ -29,6 +29,16 @@ CREATE TABLE conversation_summaries (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE TABLE garmin_connections (
+    user_id uuid NOT NULL,
+    oauth_token text NOT NULL,
+    oauth_secret text NOT NULL,
+    display_name text NOT NULL,
+    full_name text DEFAULT ''::text NOT NULL,
+    connected_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_sync timestamp with time zone
+);
+
 CREATE TABLE messages (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid NOT NULL,

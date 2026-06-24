@@ -7,26 +7,32 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"dbut.dev/x/vanity"
 	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
 	"naomi.run/database"
+	"naomi.run/garmin"
 	"naomi.run/strava"
 )
 
 type Config struct {
-	Port               string  `env:"PORT" envDefault:"8080"`
-	BaseURL            string  `env:"BASE_URL,required"`
-	StravaClientID     string  `env:"STRAVA_CLIENT_ID,required"`
-	StravaClientSecret string  `env:"STRAVA_CLIENT_SECRET,required"`
-	WebhookVerifyToken string  `env:"STRAVA_VERIFY_TOKEN"`
-	CoachName          string  `env:"COACH_NAME" envDefault:"Naomi"`
-	AllowedAthletes    []int64 `env:"STRAVA_ALLOWED_ATHLETES"`
+	Port                 string  `env:"PORT" envDefault:"8080"`
+	BaseURL              string  `env:"BASE_URL,required"`
+	StravaClientID       string  `env:"STRAVA_CLIENT_ID,required"`
+	StravaClientSecret   string  `env:"STRAVA_CLIENT_SECRET,required"`
+	WebhookVerifyToken   string  `env:"STRAVA_VERIFY_TOKEN"`
+	CoachName            string  `env:"COACH_NAME" envDefault:"Naomi"`
+	AllowedAthletes      []int64 `env:"STRAVA_ALLOWED_ATHLETES"`
+	GarminConsumerKey    string  `env:"GARMIN_CONSUMER_KEY"`
+	GarminConsumerSecret string  `env:"GARMIN_CONSUMER_SECRET"`
+	DefaultTimezone      string  `env:"DEFAULT_TIMEZONE" envDefault:"Australia/Melbourne"`
 }
 
 func (c Config) athleteAllowed(id int64) bool {
@@ -39,20 +45,34 @@ func (c Config) athleteAllowed(id int64) bool {
 }
 
 type Service struct {
-	cfg   Config
-	db    *sql.DB
-	q     *database.Queries
-	oauth *oauth2.Config
-	e     *gin.Engine
+	cfg    Config
+	db     *sql.DB
+	q      *database.Queries
+	oauth  *oauth2.Config
+	garmin *garmin.Client
+	loc    *time.Location
+	e      *gin.Engine
+
+	gmu      sync.Mutex
+	gtok     map[uuid.UUID]*garmin.OAuth2Token
+	gpending map[uuid.UUID]*garmin.LoginFlow
 }
 
 func New(db *sql.DB, cfg Config) *Service {
+	loc, err := time.LoadLocation(cfg.DefaultTimezone)
+	if err != nil {
+		loc = time.UTC
+	}
 	s := &Service{
-		cfg:   cfg,
-		db:    db,
-		q:     database.New(db),
-		oauth: strava.Config(cfg.StravaClientID, cfg.StravaClientSecret, "https://strava.dbut.dev/naomi"), // todo: configure redirect
-		e:     gin.Default(),
+		cfg:      cfg,
+		db:       db,
+		q:        database.New(db),
+		oauth:    strava.Config(cfg.StravaClientID, cfg.StravaClientSecret, "https://strava.dbut.dev/naomi"), // todo: configure redirect
+		garmin:   garmin.New(cfg.GarminConsumerKey, cfg.GarminConsumerSecret),
+		loc:      loc,
+		e:        gin.Default(),
+		gtok:     map[uuid.UUID]*garmin.OAuth2Token{},
+		gpending: map[uuid.UUID]*garmin.LoginFlow{},
 	}
 	s.e.Use(vanity.Middleware("github.com/dbut2/coach/go"))
 
@@ -75,6 +95,10 @@ func (s *Service) addRoutes() {
 	authed := s.e.Group("/", s.requireAuth)
 	authed.GET("/conversation", s.conversation)
 	authed.GET("/settings", s.settings)
+	authed.POST("/auth/garmin/connect", s.connectGarmin)
+	authed.POST("/auth/garmin/mfa", s.garminMFA)
+	authed.POST("/auth/garmin/disconnect", s.disconnectGarmin)
+	authed.POST("/auth/garmin/sync", s.syncGarminNow)
 }
 
 func (s *Service) health(c *gin.Context) {
@@ -101,10 +125,15 @@ func (s *Service) Run(ctx context.Context) error {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
+	loopCtx, cancelLoop := context.WithCancel(ctx)
+	defer cancelLoop()
+	go s.wellnessLoop(loopCtx)
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-quit
+		cancelLoop()
 		shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		_ = server.Shutdown(shutdownCtx)

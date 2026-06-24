@@ -17,6 +17,7 @@ erDiagram
     users ||--o{ planned_workouts : has
     users ||--o{ plan_change_proposals : has
     users ||--o{ wellness_metrics : has
+    users ||--o| garmin_connections : has
     users ||--o| conversation_summaries : has
 
     activities ||--o| activity_streams : "streams (cascade)"

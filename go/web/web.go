@@ -16,4 +16,6 @@ type Message struct {
 type SettingsData struct {
 	DisplayName     string
 	StravaConnected bool
+	GarminConnected bool
+	GarminState     string
 }

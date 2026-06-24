@@ -44,6 +44,16 @@ type ConversationSummary struct {
 	UpdatedAt                  time.Time     `json:"updated_at"`
 }
 
+type GarminConnection struct {
+	UserID      uuid.UUID    `json:"user_id"`
+	OauthToken  string       `json:"oauth_token"`
+	OauthSecret string       `json:"oauth_secret"`
+	DisplayName string       `json:"display_name"`
+	FullName    string       `json:"full_name"`
+	ConnectedAt time.Time    `json:"connected_at"`
+	LastSync    sql.NullTime `json:"last_sync"`
+}
+
 type Message struct {
 	ID          uuid.UUID             `json:"id"`
 	UserID      uuid.UUID             `json:"user_id"`

@@ -25,8 +25,26 @@ templ Settings(s SettingsData) {
 								<button class="btn btn-sm" style="background-color:#FC4C02;color:#fff;border:none">Connect</button>
 							}
 						}
+						<div class="border-t border-base-200"></div>
+						@connection("watch", "#007CC3", "Garmin", s.GarminConnected, "Sleep, HRV & recovery") {
+							if s.GarminConnected {
+								<form method="post" action="/auth/garmin/sync">
+									<button type="submit" class="btn btn-ghost btn-sm">Sync</button>
+								</form>
+								<form method="post" action="/auth/garmin/disconnect">
+									<button type="submit" class="btn btn-ghost btn-sm text-error">Disconnect</button>
+								</form>
+							}
+						}
 					</div>
 				</div>
+				if !s.GarminConnected {
+					if s.GarminState == "mfa" {
+						@garminMFAForm()
+					} else {
+						@garminConnectForm(s.GarminState == "error")
+					}
+				}
 			}
 			<button class="btn btn-block btn-ghost text-error">
 				<i data-lucide="log-out" class="size-4"></i>
@@ -61,4 +79,28 @@ func connStatus(connected bool, detail string) string {
 		return "Connected"
 	}
 	return detail
+}
+
+templ garminConnectForm(failed bool) {
+	<form method="post" action="/auth/garmin/connect" class="card border border-base-200 bg-base-100">
+		<div class="card-body gap-3 p-4">
+			if failed {
+				<p class="text-xs text-error">Couldn't connect — check your Garmin email and password.</p>
+			}
+			<p class="text-xs text-base-content/60">Garmin Connect has no app sign-in, so this uses your Garmin account directly. Your password isn't stored.</p>
+			<input type="email" name="email" required placeholder="Garmin email" class="input input-bordered input-sm"/>
+			<input type="password" name="password" required placeholder="Garmin password" class="input input-bordered input-sm"/>
+			<button type="submit" class="btn btn-sm self-end text-white" style="background-color:#007CC3;border:none">Connect Garmin</button>
+		</div>
+	</form>
+}
+
+templ garminMFAForm() {
+	<form method="post" action="/auth/garmin/mfa" class="card border border-base-200 bg-base-100">
+		<div class="card-body gap-3 p-4">
+			<p class="text-xs text-base-content/60">Enter the verification code Garmin just sent you.</p>
+			<input type="text" name="code" required inputmode="numeric" placeholder="Verification code" class="input input-bordered input-sm"/>
+			<button type="submit" class="btn btn-sm self-end text-white" style="background-color:#007CC3;border:none">Verify</button>
+		</div>
+	</form>
 }
