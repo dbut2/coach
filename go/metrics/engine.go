@@ -6,15 +6,17 @@ import (
 )
 
 type Options struct {
-	AsOf             time.Time
-	Overrides        ThresholdOverrides
-	RecentActivities int
-	WeeklyHistory    int
+	AsOf          time.Time
+	Overrides     ThresholdOverrides
+	RecentWindow  time.Duration
+	WeeklyHistory int
 }
 
+const defaultRecentWindow = 8 * 7 * 24 * time.Hour
+
 func (o Options) withDefaults() Options {
-	if o.RecentActivities == 0 {
-		o.RecentActivities = 10
+	if o.RecentWindow == 0 {
+		o.RecentWindow = defaultRecentWindow
 	}
 	if o.WeeklyHistory == 0 {
 		o.WeeklyHistory = 12
@@ -53,7 +55,7 @@ func BuildSnapshot(acts []Activity, wellness []Wellness, opts Options) Snapshot 
 		Recovery:    AssessRecovery(series, wellness, asOf),
 		Performance: BuildPerformanceModel(acts, thr),
 		Weekly:      tailWeeks(WeeklySummaries(acts, thr), opts.WeeklyHistory),
-		Recent:      recentAnalyses(acts, thr, opts.RecentActivities),
+		Recent:      recentAnalyses(acts, thr, asOf.Add(-opts.RecentWindow)),
 		ActivityN:   len(acts),
 	}
 	if p, ok := series.Latest(); ok {
@@ -73,14 +75,14 @@ func latestStart(acts []Activity) time.Time {
 	return t
 }
 
-func recentAnalyses(acts []Activity, thr Thresholds, n int) []ActivityMetrics {
+func recentAnalyses(acts []Activity, thr Thresholds, since time.Time) []ActivityMetrics {
 	sorted := append([]Activity(nil), acts...)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Start.After(sorted[j].Start) })
-	if len(sorted) > n {
-		sorted = sorted[:n]
-	}
 	out := make([]ActivityMetrics, 0, len(sorted))
 	for _, a := range sorted {
+		if a.Start.Before(since) {
+			break
+		}
 		out = append(out, Analyze(a, thr))
 	}
 	return out
