@@ -103,6 +103,8 @@ type PlannedWorkout struct {
 	Structure           pqtype.NullRawMessage `json:"structure"`
 	CompletedActivityID uuid.NullUUID         `json:"completed_activity_id"`
 	CreatedAt           time.Time             `json:"created_at"`
+	GarminWorkoutID     sql.NullInt64         `json:"garmin_workout_id"`
+	GarminScheduleID    sql.NullInt64         `json:"garmin_schedule_id"`
 }
 
 type RunnerFact struct {

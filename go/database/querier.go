@@ -20,6 +20,7 @@ type Querier interface {
 	DeleteSession(ctx context.Context, id string) error
 	GetActivityStream(ctx context.Context, activityID uuid.UUID) (ActivityStream, error)
 	GetGarminConnection(ctx context.Context, userID uuid.UUID) (GarminConnection, error)
+	GetPlannedWorkout(ctx context.Context, id uuid.UUID) (PlannedWorkout, error)
 	GetSessionUser(ctx context.Context, id string) (GetSessionUserRow, error)
 	GetStravaConnectionByAthleteID(ctx context.Context, athleteID int64) (StravaConnection, error)
 	ListActivitiesByUser(ctx context.Context, arg ListActivitiesByUserParams) ([]Activity, error)
@@ -27,6 +28,7 @@ type Querier interface {
 	ListGarminConnections(ctx context.Context) ([]GarminConnection, error)
 	ListWellnessByUser(ctx context.Context, arg ListWellnessByUserParams) ([]WellnessMetric, error)
 	Null(ctx context.Context) (int32, error)
+	SetPlannedWorkoutGarmin(ctx context.Context, arg SetPlannedWorkoutGarminParams) error
 	UpdateGarminLastSync(ctx context.Context, arg UpdateGarminLastSyncParams) error
 	UpdateStravaTokens(ctx context.Context, arg UpdateStravaTokensParams) error
 	UpsertActivity(ctx context.Context, arg UpsertActivityParams) (uuid.UUID, error)

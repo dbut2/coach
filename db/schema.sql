@@ -74,7 +74,9 @@ CREATE TABLE planned_workouts (
     target_duration_s integer,
     structure jsonb,
     completed_activity_id uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    garmin_workout_id bigint,
+    garmin_schedule_id bigint
 );
 
 CREATE TABLE plans (
