@@ -99,6 +99,8 @@ func (s *Service) addRoutes() {
 	authed.POST("/auth/garmin/mfa", s.garminMFA)
 	authed.POST("/auth/garmin/disconnect", s.disconnectGarmin)
 	authed.POST("/auth/garmin/sync", s.syncGarminNow)
+	authed.POST("/plan/workout/:id/push", s.pushWorkout)
+	authed.POST("/plan/workout/:id/unpush", s.unpushWorkout)
 }
 
 func (s *Service) health(c *gin.Context) {
