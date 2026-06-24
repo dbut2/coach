@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
 
+	"naomi.run/clients/garmin"
 	"naomi.run/database"
-	"naomi.run/garmin"
 	"naomi.run/web"
 )
 
