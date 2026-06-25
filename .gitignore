@@ -1,0 +1,9 @@
+# Node / frontend build deps
+frontend/node_modules/
+
+# Local browser cache used by the screenshot harness
+.cache/
+tools/.cache/
+
+# Machine-local Claude settings
+.claude/settings.local.json

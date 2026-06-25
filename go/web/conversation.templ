@@ -4,43 +4,34 @@ templ Conversation(coachName string, messages []Message, pending int, debug bool
 	@Base(coachName) {
 		@conversationBar(coachName, debug)
 		@PendingBanner(pending)
-		<main id="chat" class="flex-1 overflow-y-auto px-3 py-4" hx-ext="sse" sse-connect="/conversation/events">
-			<div class="my-2 flex justify-center">
-				<span class="rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/60">Today</span>
+		<main id="chat" class="scrollbar-soft flex-1 overflow-y-auto px-3 py-4" hx-ext="sse" sse-connect="/conversation/events">
+			<div class="my-3 flex justify-center">
+				<span class="rounded-full bg-base-200 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-base-content/45">Today</span>
 			</div>
-			<div id="thread" class="space-y-1" sse-swap={ threadEvents(debug) } hx-swap="beforeend">
+			<div id="thread" class="space-y-3" sse-swap={ threadEvents(debug) } hx-swap="beforeend">
 				for _, m := range messages {
 					@Fragment(m)
 				}
 			</div>
 			<div id="typing" sse-swap="typing" hx-swap="innerHTML"></div>
 		</main>
-		<footer class="border-t border-base-200 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-			<form
-				hx-post="/conversation"
-				hx-target="#thread"
-				hx-swap="beforeend"
-				hx-on::after-request="this.reset()"
-				class="flex items-end gap-2"
-			>
-				<textarea
-					name="message"
-					rows="1"
-					placeholder={ "Message " + coachName }
-					class="textarea textarea-bordered max-h-32 min-h-12 flex-1 resize-none rounded-2xl"
-				></textarea>
-				<button type="submit" class="btn btn-circle btn-primary" aria-label="Send">
-					<i data-lucide="arrow-up" class="size-5"></i>
-				</button>
-			</form>
-		</footer>
+		@composer(coachName)
 		<script>
 			(() => {
 				const chat = document.getElementById("chat")
 				const bottom = () => { if (chat) chat.scrollTop = chat.scrollHeight }
-				bottom()
-				document.body.addEventListener("htmx:afterSwap", () => { lucide.createIcons(); bottom() })
-				document.body.addEventListener("htmx:sseMessage", () => { lucide.createIcons(); bottom() })
+				const refresh = () => { if (window.lucide) lucide.createIcons(); bottom() }
+				window.addEventListener("DOMContentLoaded", refresh)
+				document.body.addEventListener("htmx:afterSwap", refresh)
+				document.body.addEventListener("htmx:sseMessage", refresh)
+				// Auto-grow the composer.
+				document.addEventListener("input", (e) => {
+					const t = e.target
+					if (t && t.tagName === "TEXTAREA") {
+						t.style.height = "auto"
+						t.style.height = Math.min(t.scrollHeight, 128) + "px"
+					}
+				})
 			})()
 		</script>
 	}
@@ -62,23 +53,24 @@ templ Fragment(m Message) {
 }
 
 templ Typing() {
-	<div class="chat chat-start">
-		<div class="avatar placeholder chat-image">
-			<div class="grid size-8 place-items-center rounded-full bg-primary text-primary-content">
-				<i data-lucide="activity" class="size-4"></i>
-			</div>
-		</div>
-		<div class="chat-bubble bg-base-200 text-base-content">
-			<span class="loading loading-dots loading-sm align-middle"></span>
+	<div class="flex items-end gap-2">
+		@coachAvatar("size-8", "size-4")
+		<div class="rounded-2xl rounded-tl-md bg-base-200 px-4 py-3">
+			<span class="loading loading-dots loading-sm align-middle text-base-content/50"></span>
 		</div>
 	</div>
 }
 
 templ conversationBar(coachName string, debug bool) {
-	<header class="navbar min-h-14 border-b border-base-200 bg-base-100/90 px-3 backdrop-blur">
-		<div class="flex flex-1 items-center gap-2">
+	<header class="navbar min-h-14 border-b border-white/5 bg-base-100/85 px-3 backdrop-blur-md">
+		<div class="flex flex-1 items-center gap-2.5">
+			@coachAvatar("size-9", "size-5")
 			<div class="leading-tight">
-				<div class="text-sm font-semibold">{ coachName }</div>
+				<div class="font-display text-[15px] font-bold tracking-tight">{ coachName }</div>
+				<div class="flex items-center gap-1.5 text-[11px] text-base-content/50">
+					<span class="size-1.5 rounded-full bg-success"></span>
+					Your running coach
+				</div>
 			</div>
 		</div>
 		<a
@@ -87,10 +79,10 @@ templ conversationBar(coachName string, debug bool) {
 			aria-label="Toggle debug"
 			aria-pressed={ boolAttr(debug) }
 		>
-			<i data-lucide="bug" class="size-5"></i>
+			<i data-lucide="bug" class="size-[18px]"></i>
 		</a>
 		<a href="/settings" class="btn btn-ghost btn-circle btn-sm" aria-label="Settings">
-			<i data-lucide="settings" class="size-5"></i>
+			<i data-lucide="settings" class="size-[18px]"></i>
 		</a>
 	</header>
 }
@@ -110,10 +102,10 @@ func boolAttr(b bool) string {
 }
 
 templ toolTrace(m Message) {
-	<div class="my-1 flex justify-center">
-		<div class="flex max-w-[90%] items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/5 px-2.5 py-1 font-mono text-xs text-base-content/50">
+	<div class="flex justify-center">
+		<div class="flex max-w-[90%] items-center gap-1.5 rounded-full border border-warning/25 bg-warning/5 px-2.5 py-1 font-mono text-[11px] text-base-content/45">
 			<i data-lucide="wrench" class="size-3 shrink-0 text-warning/70"></i>
-			<span class="font-semibold text-base-content/70">{ m.Tool }</span>
+			<span class="font-semibold text-base-content/65">{ m.Tool }</span>
 			if m.Content != "" {
 				<span class="truncate">{ m.Content }</span>
 			}
@@ -123,19 +115,90 @@ templ toolTrace(m Message) {
 
 templ bubble(m Message) {
 	if m.Role == RoleAssistant {
-		<div class="chat chat-start">
-			<div class="avatar placeholder chat-image">
-				<div class="grid size-8 place-items-center rounded-full bg-primary text-primary-content">
-					<i data-lucide="activity" class="size-4"></i>
-				</div>
+		<div class="flex items-end gap-2">
+			@coachAvatar("size-8", "size-4")
+			<div class="flex max-w-[82%] flex-col items-start gap-1.5">
+				<div class="rounded-2xl rounded-tl-md bg-base-200 px-4 py-2.5 text-[15px] leading-relaxed">{ m.Content }</div>
+				if m.Workout != nil {
+					@workoutCard(*m.Workout)
+				}
+				if len(m.Stats) > 0 {
+					@statStrip(m.Stats)
+				}
+				if m.Time != "" {
+					<span class="px-1 text-[11px] text-base-content/35">{ m.Time }</span>
+				}
 			</div>
-			<div class="chat-bubble bg-base-200 text-base-content">{ m.Content }</div>
-			<div class="chat-footer mt-1 text-xs text-base-content/40">{ m.Time }</div>
 		</div>
 	} else {
-		<div class="chat chat-end">
-			<div class="chat-bubble chat-bubble-primary">{ m.Content }</div>
-			<div class="chat-footer mt-1 text-xs text-base-content/40">{ m.Time }</div>
+		<div class="flex flex-col items-end gap-1">
+			<div class="max-w-[82%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] font-medium leading-relaxed text-primary-content">{ m.Content }</div>
+			<div class="flex items-center gap-1 px-1 text-[11px] text-base-content/35">
+				if m.Time != "" {
+					<span>{ m.Time }</span>
+				}
+				if m.Seen {
+					<i data-lucide="check-check" class="size-3.5 text-primary"></i>
+					<span>Seen</span>
+				}
+			</div>
 		</div>
 	}
+}
+
+templ workoutCard(w WorkoutCard) {
+	<div class="w-full rounded-xl border border-white/10 bg-base-300/60 p-3">
+		<div class="flex items-center justify-between">
+			<span class="text-[11px] font-semibold uppercase tracking-wide text-primary">{ w.When }</span>
+			if w.Distance != "" {
+				<span class="rounded-md bg-base-100 px-2 py-0.5 font-display text-xs font-bold">{ w.Distance }</span>
+			}
+		</div>
+		<div class="mt-1.5 font-display text-base font-bold tracking-tight">{ w.Name }</div>
+		if w.Detail != "" {
+			<div class="mt-0.5 text-[13px] text-base-content/60">{ w.Detail }</div>
+		}
+		if w.Pushed {
+			<div class="mt-2.5 flex items-center gap-1.5 border-t border-white/5 pt-2 text-[12px] text-success">
+				<i data-lucide="watch" class="size-3.5"></i>
+				Synced to your watch
+			</div>
+		}
+	</div>
+}
+
+templ statStrip(stats []Stat) {
+	<div class="grid w-full grid-cols-3 gap-2">
+		for _, st := range stats {
+			<div class="rounded-xl border border-white/10 bg-base-300/60 p-2.5 text-center">
+				<div class="font-display text-lg font-bold leading-none tracking-tight">{ st.Value }</div>
+				<div class="mt-1 text-[11px] font-medium text-base-content/55">{ st.Label }</div>
+				if st.Hint != "" {
+					<div class="mt-0.5 text-[10px] text-base-content/35">{ st.Hint }</div>
+				}
+			</div>
+		}
+	</div>
+}
+
+templ composer(coachName string) {
+	<footer class="border-t border-white/5 bg-base-100 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+		<form
+			hx-post="/conversation"
+			hx-target="#thread"
+			hx-swap="beforeend"
+			hx-on::after-request="this.reset(); this.querySelector('textarea').style.height='auto'"
+			class="composer flex items-end gap-2 rounded-3xl border border-white/10 bg-base-200 py-1.5 pl-4 pr-1.5 transition"
+		>
+			<textarea
+				name="message"
+				rows="1"
+				placeholder={ "Message " + coachName + "…" }
+				class="max-h-32 min-h-8 flex-1 resize-none border-0 bg-transparent py-1.5 text-[15px] leading-relaxed outline-none placeholder:text-base-content/35 focus:outline-none"
+			></textarea>
+			<button type="submit" class="btn btn-circle btn-primary btn-sm size-9 shadow-[0_2px_10px_-2px_rgba(212,245,0,0.5)]" aria-label="Send">
+				<i data-lucide="arrow-up" class="size-5"></i>
+			</button>
+		</form>
+	</footer>
 }

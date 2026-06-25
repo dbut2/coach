@@ -28,16 +28,33 @@ const coachName = "Naomi"
 
 var pages = []page{
 	{"login", web.Login(coachName)},
-	{"conversation", web.Conversation(coachName, sampleConversation)},
+	{"conversation", web.Conversation(coachName, sampleConversation, 2, false)},
 	{"settings", web.Settings(sampleSettings)},
+	{"proposals", web.Proposals(coachName, sampleProposals)},
+}
+
+var sampleProposals = []web.Proposal{
+	{ID: "1", Weekday: "Tue", Date: "Jun 30", Workout: "6 km easy + 6×20s strides", Detail: "Light turnover after Sunday's long run.", DistanceKm: 6, Rationale: "Keeps legs sharp without adding load."},
+	{ID: "2", Weekday: "Thu", Date: "Jul 2", Workout: "5 × 1 km @ 10k pace", Detail: "First sharpening session for your 10k.", DistanceKm: 8, Rationale: "Six weeks out — time to touch race pace."},
 }
 
 var sampleConversation = []web.Message{
-	{Role: web.RoleAssistant, Content: "Morning! I saw your 8 km easy run synced overnight — nicely controlled, your pace stayed in zone 2 the whole way. Your Garmin also logged 7h 40m sleep and HRV back up to 68 ms, so recovery's looking solid. How did the legs feel?", Time: "7:02 AM"},
+	{Role: web.RoleAssistant, Content: "Morning! Your 8 km easy run synced overnight — nicely controlled, you held zone 2 the whole way. Garmin logged 7h 40m sleep and HRV back up to 68 ms, so recovery's looking solid. How did the legs feel?", Time: "7:02 AM"},
 	{Role: web.RoleUser, Content: "Pretty good, a bit heavy at the start but loosened up after a couple of km.", Time: "7:14 AM"},
-	{Role: web.RoleAssistant, Content: "That's normal the day after a long run. Your acute:chronic load is sitting at 1.1, right in the sweet spot — no need to back off. Want me to slot an easy day or some strides for tomorrow?", Time: "7:15 AM"},
-	{Role: web.RoleUser, Content: "Strides sound good. I've got a 10k race in 6 weeks I want to target.", Time: "7:20 AM"},
-	{Role: web.RoleAssistant, Content: "Noted — I've recorded that 10k goal. Six weeks is enough to sharpen. I've pushed tomorrow's session — 6 km easy with 6×20s strides — to your Garmin so it's ready on the watch. I'll shape the full plan and run it past you before anything else changes.", Time: "7:21 AM"},
+	{Role: web.RoleAssistant, Content: "That's normal the day after a long run. Here's where your load's sitting — right in the sweet spot, no need to back off.", Time: "7:15 AM", Stats: []web.Stat{
+		{Label: "Weekly", Value: "42km", Hint: "+3 vs last"},
+		{Label: "ACWR", Value: "1.1", Hint: "balanced"},
+		{Label: "Sleep", Value: "7:40", Hint: "HRV 68"},
+	}},
+	{Role: web.RoleUser, Content: "Nice. I've got a 10k race in 6 weeks I want to target.", Time: "7:20 AM"},
+	{Role: web.RoleAssistant, Content: "Noted — I've recorded that 10k goal. Six weeks is enough to sharpen. I've put tomorrow's session on your watch to get us started:", Time: "7:21 AM", Workout: &web.WorkoutCard{
+		When:     "Tomorrow · Tue",
+		Name:     "Easy + strides",
+		Distance: "6 km",
+		Detail:   "6 × 20s strides @ 5k effort, full recovery",
+		Pushed:   true,
+	}},
+	{Role: web.RoleUser, Content: "Perfect, thanks Naomi.", Time: "7:22 AM", Seen: true},
 }
 
 var sampleSettings = web.SettingsData{
@@ -70,7 +87,12 @@ func run() error {
 		comps[p.name] = p.comp
 	}
 
+	assets := http.StripPrefix("/assets/", http.FileServer(http.FS(web.Assets())))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/assets/") {
+			assets.ServeHTTP(w, r)
+			return
+		}
 		comp, ok := comps[strings.Trim(r.URL.Path, "/")]
 		if !ok {
 			http.NotFound(w, r)
@@ -82,11 +104,15 @@ func run() error {
 	}))
 	defer srv.Close()
 
-	bin := launcher.NewBrowser()
-	bin.RootDir = *browserDir
-	binPath, err := bin.Get()
-	if err != nil {
-		return fmt.Errorf("provision browser: %w", err)
+	binPath := os.Getenv("CHROME_BIN")
+	if binPath == "" {
+		bin := launcher.NewBrowser()
+		bin.RootDir = *browserDir
+		p, err := bin.Get()
+		if err != nil {
+			return fmt.Errorf("provision browser: %w", err)
+		}
+		binPath = p
 	}
 
 	l := launcher.New().Bin(binPath).Headless(true)

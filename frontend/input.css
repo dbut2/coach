@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+/* Scan the generated templates for class names. */
+@source "../go/web/*.go";
+@source "../go/web/*.templ";
+
+@plugin "daisyui" {
+  themes: false;
+}
+
+/* Naomi — "Volt": electric lime on near-black. Energetic & athletic. */
+@plugin "daisyui/theme" {
+  name: "naomi";
+  default: true;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: #131417; /* chat panel / cards base */
+  --color-base-200: #1c1e23; /* coach bubbles, raised cards */
+  --color-base-300: #0a0a0b; /* app background behind the panel */
+  --color-base-content: #f3f4f1;
+
+  --color-primary: #d4f500; /* Volt */
+  --color-primary-content: #0a0a0b;
+
+  --color-secondary: #23252b;
+  --color-secondary-content: #f3f4f1;
+
+  --color-accent: #d4f500;
+  --color-accent-content: #0a0a0b;
+
+  --color-neutral: #1c1e23;
+  --color-neutral-content: #f3f4f1;
+
+  --color-info: #56c8e6;
+  --color-info-content: #04141a;
+
+  --color-success: #9ae600;
+  --color-success-content: #0a0a0b;
+
+  --color-warning: #f6c945;
+  --color-warning-content: #1a1403;
+
+  --color-error: #fb7185;
+  --color-error-content: #1a0509;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.25rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Self-hosted fonts. */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("/assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("/assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("/assets/fonts/inter-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("/assets/fonts/inter-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("/assets/fonts/inter-latin-600-normal.woff2") format("woff2");
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+}
+
+/* Base typography + scroll behaviour. */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Subtle scrollbar that matches the dark theme. */
+.scrollbar-soft::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-soft::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-base-content) 12%, transparent);
+  border-radius: 999px;
+}
+
+/* Volt focus ring for the composer. */
+.composer:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 22%, transparent);
+}

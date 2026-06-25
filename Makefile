@@ -12,6 +12,12 @@ gen-sql:
 gen-templ:
 	$(GO) -C tools tool templ generate -path ../go/web
 
+# gen-css compiles the self-hosted stylesheet (Tailwind v4 + DaisyUI + the
+# Naomi "Volt" theme) into go/web/assets/app.css, which is embedded in the binary.
+.PHONY: gen-css
+gen-css:
+	cd frontend && npm install && npm run build
+
 .PHONY: screenshots
 screenshots: gen-templ
 	$(GO) -C tools run ./screenshots

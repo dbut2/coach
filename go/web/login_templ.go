@@ -41,20 +41,28 @@ func Login(coachName string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<main class=\"flex flex-1 flex-col px-6 py-10\"><div class=\"flex flex-1 flex-col items-center justify-center text-center\"><div class=\"mb-6 grid size-20 place-items-center rounded-3xl bg-primary text-primary-content shadow-lg\"><i data-lucide=\"activity\" class=\"size-10\"></i></div><h1 class=\"text-3xl font-bold tracking-tight\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<main class=\"relative flex flex-1 flex-col overflow-hidden px-6 py-10\"><div class=\"pointer-events-none absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl\"></div><div class=\"relative flex flex-1 flex-col items-center justify-center text-center\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = coachAvatar("size-24", "size-12").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"mt-7 font-display text-4xl font-bold tracking-tight\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(coachName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `login.templ`, Line: 10, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `login.templ`, Line: 9, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1><p class=\"mt-3 font-medium\">Your AI running coach</p><p class=\"mt-1 max-w-xs text-sm text-base-content/60\">Connect Strava and start improving your training planning today.</p></div><div class=\"flex flex-col gap-4\"><a href=\"/auth/strava\" class=\"btn h-12 w-full border-none text-base font-semibold text-white shadow-md\" style=\"background-color:#FC4C02\"><i data-lucide=\"zap\" class=\"size-5\"></i> Connect with Strava</a><p class=\"px-4 text-center text-xs text-base-content/50\">We request read access to your activities. You can disconnect at any time in settings.</p></div></main>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h1><p class=\"mt-2 text-base font-medium text-base-content/90\">Your AI running coach</p><p class=\"mt-2 max-w-[16rem] text-sm leading-relaxed text-base-content/55\">She watches every run, learns what works for you, and shapes a plan around your next race.</p></div><div class=\"relative flex flex-col gap-4\"><a href=\"/auth/strava\" class=\"btn h-13 w-full gap-2 border-none text-base font-semibold text-white shadow-lg\" style=\"background-color:#FC4C02\"><i data-lucide=\"zap\" class=\"size-5\"></i> Continue with Strava</a><p class=\"px-4 text-center text-xs leading-relaxed text-base-content/45\">We request read access to your activities. You can disconnect any time in settings.</p></div></main>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

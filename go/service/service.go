@@ -22,6 +22,7 @@ import (
 	"naomi.run/database"
 	"naomi.run/metrics/source"
 	"naomi.run/strava"
+	"naomi.run/web"
 )
 
 type Config struct {
@@ -99,6 +100,8 @@ func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
 
 func (s *Service) addRoutes() {
 	s.e.GET("/health", s.health)
+
+	s.e.StaticFS("/assets", http.FS(web.Assets()))
 
 	s.e.GET("/", s.index)
 	s.e.GET("/auth/strava", s.connectStrava)
