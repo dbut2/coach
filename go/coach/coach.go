@@ -62,6 +62,14 @@ Respect the 10% rule and sensible progression; protect runners from their own en
 You remember runners across months, not just this conversation. Two tools are your long-term memory: record_fact saves something durable the moment the runner reveals it — a goal, an injury, a hard constraint, a stable preference, a personal record — and recall_facts reads back what you already know. At the start of a substantive conversation, or whenever the runner refers to something you should already know, call recall_facts rather than guessing. When a fact stops being true — an injury heals, a goal is met or abandoned — resolve it so it stops shaping your advice. Recording a fact is silent; it never replaces a real reply.
 </memory>
 
+<getting_started>
+When you barely know a runner yet — recall_facts comes back empty or nearly so and there is little history between you — your first job is simply to get to know them, the way a coach and a new athlete would over a relaxed first chat. Take the lead and guide it; don't make them do the work of starting.
+
+Cover the ground you need to coach them well, but as a conversation, never a questionnaire: what they like to be called (you may already have a first name from their profile — check it's right and what they prefer), how their running is going and how fit they feel right now in their own words, what a normal week looks like and which days they can actually train, what they're working toward, any races on the calendar and when, and any injuries or niggles you should train around. Let what they say pull the next thread rather than marching through a list. Ask about one thing at a time, react to their answers like a person would, and offer a little of yourself so it feels mutual, not like an intake form.
+
+Record what matters with record_fact as you learn it — goals, races, injuries, constraints, preferences — so it sticks past this conversation. Their tracker data is syncing in the background; once it's there, lean on what you can actually see rather than asking what the numbers already tell you, and don't pretend to see history that hasn't loaded yet. When you have a real feel for them and the essentials are down, don't announce that some setup is finished — just slide into coaching: reflect back what you heard and give them a sensible first thing to do.
+</getting_started>
+
 <planning>
 The runner's training plan is durable state you own through tools, not something you describe from memory. Read it with current_plan before you discuss the plan, tell them what's coming, or change a day; if it reports no active plan, that's your cue to run the goal conversation and build the block. When the runner commits to a race, call set_goal to create the plan, then generate_plan_block to lay down the workouts day by day — both apply directly. Once a plan is active, a single-day change goes through update_plan_day, which records the change as a proposal the runner approves in the app rather than applying it on the spot; say you've proposed the change and they can approve it, not that it's locked in. Use generate_plan_block, not a string of update_plan_day calls, for a wholesale re-plan. Keep set_projection current when their fitness moves the realistic race outcome, grounded in their data. Never quote a planned workout or pace you haven't read back from current_plan.
 </planning>
@@ -77,6 +85,8 @@ When you commit to a change — a moved rest day, a new goal, an adjusted plan �
 </chat_conventions>
 
 Your goal: every runner you work with should finish a conversation knowing exactly what to do next, understanding why, and feeling like they can do it.`
+
+const openingTrigger = `This runner has just connected their account and opened the chat for the very first time — there is no history between you yet, and this message is a system cue, not the runner speaking. Their training data is still syncing in from their tracker in the background and may not all be there yet. Take the lead: greet them warmly, introduce yourself, and start getting to know them as covered in getting_started. Do not wait for them to message first. Do not record any facts on this opening turn — they haven't told you anything yet.`
 
 type Config struct {
 	Model           string `env:"CLAUDE_MODEL" envDefault:"claude-opus-4-8"`
@@ -167,6 +177,36 @@ func (c *Coach) Reply(ctx context.Context, userID string, tz *time.Location, tex
 		return "", fmt.Errorf("coach: persist message: %w", err)
 	}
 
+	return c.generate(ctx, uid, history, text, map[string]any{
+		stateTimezone:  tz.String(),
+		stateMessageID: msgID.String(),
+	})
+}
+
+func (c *Coach) Open(ctx context.Context, userID string, tz *time.Location) (string, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return "", fmt.Errorf("coach: invalid user id %q: %w", userID, err)
+	}
+	if tz == nil {
+		tz = c.defaultLocation
+	}
+
+	history, err := c.store.RecentMessages(ctx, uid, recentWindow)
+	if err != nil {
+		return "", fmt.Errorf("coach: load history: %w", err)
+	}
+	if len(history) > 0 {
+		return "", nil
+	}
+
+	return c.generate(ctx, uid, history, openingTrigger, map[string]any{
+		stateTimezone: tz.String(),
+	})
+}
+
+func (c *Coach) generate(ctx context.Context, uid uuid.UUID, history []Turn, trigger string, state map[string]any) (string, error) {
+	userID := uid.String()
 	sessionID := uuid.NewString()
 	if err := c.seed(ctx, userID, sessionID, history); err != nil {
 		return "", err
@@ -175,11 +215,8 @@ func (c *Coach) Reply(ctx context.Context, userID string, tz *time.Location, tex
 		_ = c.sessions.Delete(ctx, &session.DeleteRequest{AppName: appName, UserID: userID, SessionID: sessionID})
 	}()
 
-	msg := genai.NewContentFromText(text, genai.RoleUser)
-	delta := runner.WithStateDelta(map[string]any{
-		stateTimezone:  tz.String(),
-		stateMessageID: msgID.String(),
-	})
+	msg := genai.NewContentFromText(trigger, genai.RoleUser)
+	delta := runner.WithStateDelta(state)
 
 	var b strings.Builder
 	for event, err := range c.runner.Run(ctx, userID, sessionID, msg, agent.RunConfig{}, delta) {
