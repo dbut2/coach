@@ -35,5 +35,6 @@ environment (Compose reads a local `.env`; never commit secrets). Code generatio
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — how the system is built today
+- [`docs/design.md`](docs/design.md) — UX principles, brand system, and screen specs
 - [`docs/schema.md`](docs/schema.md) — database schema and relationships
 - [`docs/brief.md`](docs/brief.md) — original design rationale and decision log
