@@ -2,9 +2,10 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-25
-- **Amends:** [`brief.md`](../brief.md) §1 — graduates Amendment A into the register
 
 ## Context
+
+**Amends:** [`brief.md`](../brief.md) §1 — graduates Amendment A into the register
 
 brief.md §1 set the determinism test as: *"if identical input must yield an
 identical number, it is a tool."* That test conflates two unlike things that are
