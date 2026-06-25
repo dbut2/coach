@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
 
 	"naomi.run/coach"
@@ -31,6 +32,10 @@ func (s *Service) conversation(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
+	}
+
+	if len(rows) == 0 {
+		s.startOnboarding(user.ID)
 	}
 
 	msgs := make([]web.Message, 0, len(rows))
@@ -110,6 +115,26 @@ func (s *Service) sendMessage(c *gin.Context) {
 		Content: text,
 		Time:    time.Now().In(s.loc).Format("3:04 PM"),
 	}))
+}
+
+func (s *Service) startOnboarding(userID uuid.UUID) {
+	if _, busy := s.onboarding.LoadOrStore(userID, struct{}{}); busy {
+		return
+	}
+
+	go func() {
+		defer s.onboarding.Delete(userID)
+
+		uid := userID.String()
+		s.hub.broadcast(uid, "typing", renderHTML(web.Typing()))
+		defer s.hub.broadcast(uid, "typing", "")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		if _, err := s.coach.Open(ctx, uid, s.loc); err != nil {
+			slog.Error("coach open", "user", uid, "error", err)
+		}
+	}()
 }
 
 func (s *Service) conversationEvents(c *gin.Context) {

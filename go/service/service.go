@@ -62,6 +62,8 @@ type Service struct {
 	gmu      sync.Mutex
 	gtok     map[uuid.UUID]*garmin.OAuth2Token
 	gpending map[uuid.UUID]*garmin.LoginFlow
+
+	onboarding sync.Map
 }
 
 func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
