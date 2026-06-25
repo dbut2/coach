@@ -2,8 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-25
-- **Supersedes:** the determinism axiom in [`brief.md`](../brief.md) §1, where
-  they conflict
+- **Amends:** [`brief.md`](../brief.md) §1 — graduates Amendment A into the register
 
 ## Context
 
@@ -35,26 +34,35 @@ read the athlete *worse* than the earlier metric-free one.
 Draw the deterministic boundary at **measurement vs. judgement**, not "number
 vs. prose." The test becomes:
 
-> Is there a ground-truth answer this value could be *wrong* about? If yes, it
-> is a measurement — compute it deterministically and hand it over. If no, it is
-> a judgement — it belongs to the coach, grounded in the measurements it is
-> handed.
+> Does the value *describe* what already happened — training done, capacity
+> shown — so that there is one correct answer the model would be *wrong* to
+> vary? Then it is a measurement: compute it deterministically and hand it over.
+> Does it instead *forecast* a result or *prescribe* an action, where defensible
+> coaches differ? Then it is a judgement: it belongs to the coach, grounded in
+> the measurements it is handed.
 
 ## Consequences
 
-- **Measurements stay deterministic tools.** Aggregation, pace, splits, drift,
-  decoupling, zone distributions, CTL/ATL/TSB, ramp — all computed, all quoted,
-  never re-derived by the model. The anti-arithmetic guardrail is a
-  *measurement-integrity* rule and is kept in full; it was never the source of
-  the rigidity.
-- **Judgements move to the coach.** Projection, readiness, and "push or back
-  off" are the coach's call, reasoned over the data snapshot and stated with
-  what each rests on. The projection of record is prose committed via
-  `set_projection`, never a formula's output.
-- **Formulas like Riegel/ACWR are demoted, not deleted.** They may be surfaced
-  as *one optional reference input* the coach can cite and contextualise
+- **Measurements stay deterministic tools.** A measurement is any value that
+  *describes training already done* and is a determinate function of the data —
+  one correct answer the model would be *wrong* to vary. That spans the raw
+  (aggregation, pace, splits, drift, decoupling, zone distributions) and the
+  modelled-but-defined (CTL/ATL/TSB, ACWR, ramp): a fixed formula over real
+  history yields one number. All computed, all quoted, never re-derived by the
+  model. The anti-arithmetic guardrail is a *measurement-integrity* rule, kept
+  in full; it was never the source of the rigidity.
+- **Judgements move to the coach.** A *forecast* of a result or a *prescription*
+  for action — the race projection, the readiness call, "push or back off" — is
+  the coach's, reasoned over the data snapshot and stated with what it rests on.
+  The projection of record is the coach's stated prose, never a formula's output.
+- **It is the verdict that is demoted, not the number.** A measurement crosses
+  into judgement the moment it is read as a gate or a forecast — that reading,
+  not the arithmetic, is what carries no ground truth. The ACWR ratio is a
+  measurement; "ACWR 1.5, so skip the session" is a judgement and never a hard
+  gate. A Riegel time is not a measurement at all but a projection: surface it,
+  if ever, as *one optional reference* the coach cites and contextualises
   ("textbook math says ~X off your 5k, but given Saturday faded I'd hold you at
-  Y"). Never the authoritative number, never a hard gate.
+  Y"), never as the projection of record.
 - **"Science-based" is reframed.** Rigour lives in *grounding and traceability*
   — every judgement accountable to measured data and saying what it rests on —
   not in replacing the coach's judgement with a regression.
