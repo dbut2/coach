@@ -1,0 +1,11 @@
+with-expecter: true
+disable-version-string: true
+filename: "{{ .InterfaceName | snakecase }}_mock_test.go"
+packages:
+  naomi.run/coach:
+    config:
+      dir: "coach/eval"
+      outpkg: "eval"
+    interfaces:
+      Store:
+      MetricsSource:
