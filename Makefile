@@ -26,3 +26,7 @@ gen-strava:
 tooling:
 	brew install go
 	brew install direnv
+
+.PHONY: gen-mocks
+gen-mocks:
+	$(GO) -C go tool mockery --config .mockery.yaml
