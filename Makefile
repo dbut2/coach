@@ -30,3 +30,7 @@ tooling:
 .PHONY: gen-mocks
 gen-mocks:
 	$(GO) -C go tool mockery --config .mockery.yaml
+
+.PHONY: eval
+eval:
+	$(GO) -C go test -tags eval -v -run TestEval ./coach/eval/...
