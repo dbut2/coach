@@ -11,7 +11,9 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"naomi.run/coach"
 	"naomi.run/metrics"
@@ -50,9 +52,7 @@ func liveConfig(t *testing.T) config {
 		t.Skip("eval: skipped in -short mode")
 	}
 	cfg, err := env.ParseAs[config]()
-	if err != nil {
-		t.Fatalf("eval: load config: %v", err)
-	}
+	require.NoError(t, err, "eval: load config")
 	if cfg.APIKey == "" {
 		t.Skip("eval: ANTHROPIC_API_KEY not set")
 	}
@@ -69,24 +69,18 @@ func (s scenario) run(t *testing.T, cfg config) outcome {
 		APIKey:          cfg.APIKey,
 		DefaultTimezone: cfg.Timezone,
 	}, src, store)
-	if err != nil {
-		t.Fatalf("eval: build coach: %v", err)
-	}
+	require.NoError(t, err, "eval: build coach")
 
 	uid := uuid.NewString()
 	var replies []string
 	if s.open {
 		reply, err := c.Open(context.Background(), uid, nil)
-		if err != nil {
-			t.Fatalf("eval: open: %v", err)
-		}
+		require.NoError(t, err, "eval: open")
 		replies = append(replies, reply)
 	}
 	for _, m := range s.messages {
 		reply, err := c.Reply(context.Background(), uid, nil, m)
-		if err != nil {
-			t.Fatalf("eval: reply %q: %v", m, err)
-		}
+		require.NoErrorf(t, err, "eval: reply %q", m)
 		replies = append(replies, reply)
 	}
 
@@ -158,31 +152,21 @@ var (
 
 func assertNotEmpty(t *testing.T, text string) {
 	t.Helper()
-	if strings.TrimSpace(text) == "" {
-		t.Error("eval: coach reply was empty")
-	}
+	assert.NotEmpty(t, strings.TrimSpace(text), "eval: coach reply was empty")
 }
 
 func assertNoMarkdown(t *testing.T, text string) {
 	t.Helper()
-	if strings.Contains(text, "**") {
-		t.Errorf("eval: reply contains markdown bold:\n%s", text)
-	}
-	if markdownHeading.MatchString(text) {
-		t.Errorf("eval: reply contains a markdown heading:\n%s", text)
-	}
-	if markdownBullet.MatchString(text) {
-		t.Errorf("eval: reply contains a markdown bullet list:\n%s", text)
-	}
+	assert.NotContains(t, text, "**", "eval: reply contains markdown bold")
+	assert.NotRegexp(t, markdownHeading, text, "eval: reply contains a markdown heading")
+	assert.NotRegexp(t, markdownBullet, text, "eval: reply contains a markdown bullet list")
 }
 
 func assertNoSendoff(t *testing.T, text string) {
 	t.Helper()
 	low := strings.ToLower(text)
 	for _, s := range sendoffs {
-		if strings.Contains(low, s) {
-			t.Errorf("eval: reply ends the conversation with a sign-off (%q):\n%s", s, text)
-		}
+		assert.NotContainsf(t, low, s, "eval: reply ends the conversation with a sign-off (%q)", s)
 	}
 }
 

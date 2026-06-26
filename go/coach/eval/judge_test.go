@@ -10,6 +10,8 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const judgeSystem = `You are a meticulous, skeptical evaluator grading a single reply from Naomi, an AI running coach, inside a chat conversation.
@@ -53,30 +55,24 @@ func grade(ctx context.Context, t *testing.T, cfg config, rubric, transcript str
 		ToolChoice: anthropic.ToolChoiceParamOfTool("record_verdict"),
 		Messages:   []anthropic.MessageParam{anthropic.NewUserMessage(anthropic.NewTextBlock(prompt))},
 	})
-	if err != nil {
-		t.Fatalf("eval: judge call: %v", err)
-	}
+	require.NoError(t, err, "eval: judge call")
 
 	for _, block := range msg.Content {
 		if tu, ok := block.AsAny().(anthropic.ToolUseBlock); ok {
 			var v verdict
-			if err := json.Unmarshal(tu.Input, &v); err != nil {
-				t.Fatalf("eval: judge verdict decode: %v", err)
-			}
+			require.NoError(t, json.Unmarshal(tu.Input, &v), "eval: judge verdict decode")
 			return v
 		}
 	}
-	t.Fatalf("eval: judge returned no verdict; content=%+v", msg.Content)
+	require.Failf(t, "eval: judge returned no verdict", "content=%+v", msg.Content)
 	return verdict{}
 }
 
 func assertJudgePass(t *testing.T, cfg config, rubric, transcript string) {
 	t.Helper()
 	v := grade(context.Background(), t, cfg, rubric, transcript)
-	if !v.Pass {
-		t.Errorf("eval: judge failed reply (score %d/5): %s\nfailures: %v\n--- transcript ---\n%s",
-			v.Score, v.Rationale, v.Failures, transcript)
-		return
+	if assert.Truef(t, v.Pass, "eval: judge failed reply (score %d/5): %s\nfailures: %v\n--- transcript ---\n%s",
+		v.Score, v.Rationale, v.Failures, transcript) {
+		t.Logf("eval: judge passed (score %d/5): %s", v.Score, v.Rationale)
 	}
-	t.Logf("eval: judge passed (score %d/5): %s", v.Score, v.Rationale)
 }
