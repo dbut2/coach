@@ -28,7 +28,7 @@ const coachName = "Naomi"
 
 var pages = []page{
 	{"login", web.Login(coachName)},
-	{"conversation", web.Conversation(coachName, sampleConversation)},
+	{"conversation", web.Conversation(coachName, sampleConversation, 0, false)},
 	{"settings", web.Settings(sampleSettings)},
 }
 

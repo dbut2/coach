@@ -274,7 +274,7 @@ func (c *Coach) seed(ctx context.Context, userID, sessionID string, history []Tu
 		return fmt.Errorf("coach: create session: %w", err)
 	}
 	for _, t := range history {
-		ev := session.NewEvent("seed")
+		ev := session.NewEventWithContext(ctx, "seed")
 		if t.Role == RoleCoach {
 			ev.Author = appName
 			ev.LLMResponse = model.LLMResponse{Content: &genai.Content{Role: "model", Parts: []*genai.Part{{Text: t.Content}}}}
