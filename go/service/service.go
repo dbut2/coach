@@ -83,7 +83,7 @@ func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
 		cfg:      cfg,
 		db:       db,
 		q:        q,
-		oauth:    strava.Config(cfg.StravaClientID, cfg.StravaClientSecret, "https://strava.dbut.dev/naomi"), // todo: configure redirect
+		oauth:    strava.Config(cfg.StravaClientID, cfg.StravaClientSecret, "https://strava.dbut.dev/coach"), // todo: configure redirect
 		garmin:   garmin.New(cfg.GarminConsumerKey, cfg.GarminConsumerSecret),
 		coach:    cch,
 		loc:      loc,
