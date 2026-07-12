@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	dbut.dev/x v0.0.0-20260611154244-981427647aee
 	github.com/a-h/templ v0.3.1020
-	github.com/anthropics/anthropic-sdk-go v1.56.0
+	github.com/anthropics/anthropic-sdk-go v1.57.0
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-openapi/errors v0.22.8
