@@ -23,7 +23,7 @@ jobs:
         target: [gen-sql, gen-strava, gen-templ]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: tools/go.mod
           cache-dependency-path: tools/go.sum
