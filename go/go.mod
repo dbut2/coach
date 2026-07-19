@@ -30,7 +30,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/adk v1.5.0
-	google.golang.org/genai v1.63.0
+	google.golang.org/genai v1.64.0
 )
 
 require (
