@@ -11,10 +11,10 @@ require (
 	github.com/go-openapi/errors v0.22.8
 	github.com/go-openapi/runtime v0.32.5
 	github.com/go-openapi/strfmt v0.27.0
-	github.com/go-openapi/swag/conv v0.27.0
-	github.com/go-openapi/swag/jsonutils v0.27.0
-	github.com/go-openapi/swag/stringutils v0.27.0
-	github.com/go-openapi/swag/typeutils v0.27.0
+	github.com/go-openapi/swag/conv v0.27.3
+	github.com/go-openapi/swag/jsonutils v0.27.3
+	github.com/go-openapi/swag/stringutils v0.27.3
+	github.com/go-openapi/swag/typeutils v0.27.3
 	github.com/go-openapi/validate v0.26.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
@@ -30,7 +30,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/adk v1.5.0
-	google.golang.org/genai v1.63.0
+	google.golang.org/genai v1.64.0
 )
 
 require (
@@ -63,6 +63,7 @@ require (
 	github.com/go-openapi/swag/jsonname v0.26.1 // indirect
 	github.com/go-openapi/swag/loading v0.26.1 // indirect
 	github.com/go-openapi/swag/mangling v0.26.1 // indirect
+	github.com/go-openapi/swag/pools v0.27.3 // indirect
 	github.com/go-openapi/swag/yamlutils v0.26.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
